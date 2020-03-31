@@ -16,7 +16,7 @@ func InitDB() (*gorm.DB, error) {
 	}
 	db.DB().SetMaxIdleConns(100)
 	DB = db
-	db.AutoMigrate(&models.Tenant{}, &models.Users{}, &models.Passwords{})
+	db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.Password{})
 	initRoots()
 	return db, err
 }
@@ -31,12 +31,12 @@ func initRoots() {
 		Version:         0,
 	}
 	DB.FirstOrCreate(&rootTenant)
-	rootUser := models.Users{
+	rootUser := models.User{
 		ID:       &uuid.Nil,
 		Login:    "root",
 		TenantId: &uuid.Nil,
 		Role:     "tenant_admin",
 		Version:  0}
 	DB.FirstOrCreate(&rootUser)
-	DB.FirstOrCreate(&models.Passwords{ID: &uuid.Nil, Password: "root"})
+	DB.FirstOrCreate(&models.Password{ID: &uuid.Nil, Password: "root"})
 }

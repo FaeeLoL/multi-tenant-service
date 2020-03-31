@@ -10,20 +10,20 @@ func InitRoutes() *gin.Engine {
 	router := gin.Default()
 
 	router.Use(cors.Default())
-
 	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+	//router.Use(gin.Recovery())
 
 	apiGroup := router.Group("/api/v1")
-	authGroup := router.Group("/auth")
+	authGroup := apiGroup.Group("/auth")
 	{
 		authController := new(controllers.AuthController)
 		authMiddleware := authController.Init()
 		authGroup.POST("login", authMiddleware.LoginHandler)
-		// Refresh time can be longer than token timeout
 		authGroup.GET("/refresh_token", authMiddleware.RefreshHandler)
-		authGroup.Use(authMiddleware.MiddlewareFunc())
+		//authGroup.Use(authMiddleware.MiddlewareFunc())
+		apiGroup.Use(authMiddleware.MiddlewareFunc())
 	}
+
 
 	//router.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
 	//	claims := jwt.ExtractClaims(c)
@@ -44,16 +44,16 @@ func InitRoutes() *gin.Engine {
 	//	tenants.GET("/:tenants_id/users", tenantsController.GetTenantUsersList)
 	//}
 	//
-	//users := apiGroup.Group("/users")
-	//{
-	//	usersController := new(controllers.UsersController)
-	//	users.POST("/", usersController.CreateUser)
-	//	//users.GET("/", usersController.GetUsersBatch)
-	//	//users.GET("me", usersController.GetSelfInfo)
-	//	//users.GET("/:user_id", usersController.GetUser)
-	//	//users.PUT(":user_id", usersController.UpdateUser)
-	//	//users.PUT(":user_id", usersController.DeleteUser)
-	//}
+	users := apiGroup.Group("/users")
+	{
+		usersController := new(controllers.UsersController)
+		users.POST("/", usersController.CreateUser)
+		//users.GET("/", usersController.GetUsersBatch)
+		//users.GET("me", usersController.GetSelfInfo)
+		//users.GET("/:user_id", usersController.GetUser)
+		//users.PUT(":user_id", usersController.UpdateUser)
+		//users.PUT(":user_id", usersController.DeleteUser)
+	}
 
 	return router
 }
