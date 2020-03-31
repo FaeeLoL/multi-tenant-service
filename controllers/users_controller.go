@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"strings"
 )
 
 type UsersController struct {
@@ -26,7 +27,7 @@ func (u UsersController) CreateUser(c *gin.Context) {
 		u.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("bind fail: %+v", err.Error()))
 		return
 	}
-	parentTenant, err := uuid.FromString(authUser.TenantId)
+	authTenantId, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
 		return
@@ -36,7 +37,7 @@ func (u UsersController) CreateUser(c *gin.Context) {
 		u.JsonFail(c, http.StatusBadRequest, "invalid tenant_id format")
 		return
 	}
-	if !isChildAvailable(parentTenant, tenantId) {
+	if !isChildAvailable(authTenantId, tenantId) {
 		u.JsonFail(c, http.StatusForbidden, "access is denied")
 		return
 	}
@@ -81,4 +82,35 @@ func (u UsersController) CreateUser(c *gin.Context) {
 func isLoginFree(login string) bool {
 	var user models.User
 	return gorm.IsRecordNotFoundError(database.DB.Where("login = ?", login).First(&user).Error)
+}
+
+func (u UsersController) GetUsersBatch(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+	var uuids []uuid.UUID
+	ids := c.Request.URL.Query().Get("uuids")
+	if ids == "" {
+		u.JsonSuccess(c, http.StatusOK, models.UsersBatch{})
+		return
+	}
+	for _, id := range strings.Split(ids, ",") {
+		if cur, err := uuid.FromString(id); err == nil {
+			uuids = append(uuids, cur)
+		}
+	}
+	var users []models.User
+	if err := database.DB.Where("id IN (?)", uuids).Find(&users).Error; err != nil {
+		panic(err)
+	}
+	var results models.UsersBatch
+	for _, user := range users {
+		if isChildAvailable(authTenantId, *user.TenantId) {
+			results.Items = append(results.Items, user.ToBasicUserSchema())
+		}
+	}
+	u.JsonSuccess(c, http.StatusOK, results)
 }

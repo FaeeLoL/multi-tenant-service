@@ -48,7 +48,7 @@ func InitRoutes() *gin.Engine {
 	{
 		usersController := new(controllers.UsersController)
 		users.POST("/", usersController.CreateUser)
-		//users.GET("/", usersController.GetUsersBatch)
+		users.GET("/", usersController.GetUsersBatch)
 		//users.GET("me", usersController.GetSelfInfo)
 		//users.GET("/:user_id", usersController.GetUser)
 		//users.PUT(":user_id", usersController.UpdateUser)

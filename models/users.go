@@ -59,3 +59,7 @@ type Password struct {
 	UpdatedAt time.Time
 	DeletedAt *time.Time `sql:"index"`
 }
+
+type UsersBatch struct {
+	Items []BasicUserSchema `json:"items"`
+}
