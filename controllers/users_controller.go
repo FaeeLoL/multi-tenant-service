@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/faeelol/multi-tenant-service/database"
 	"github.com/faeelol/multi-tenant-service/models"
 	"github.com/gin-gonic/gin"
@@ -125,6 +126,38 @@ func (u UsersController) GetSelfInfo(c *gin.Context) {
 	var user models.User
 	if err := database.DB.Where("id = ?", authUserId).Find(&user).Error; err != nil {
 		panic(err)
+	}
+	u.JsonSuccess(c, http.StatusOK, user.ToBasicUserSchema())
+}
+
+func (u UsersController) GetUser(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+	userIdS, ok := c.Params.Get("user_id")
+	if !ok {
+		u.JsonFail(c, http.StatusBadRequest, "empty user_id field")
+		return
+	}
+	userId, err := uuid.FromString(userIdS)
+	if err != nil {
+		u.JsonFail(c, http.StatusBadRequest, "invalid user_id format")
+		return
+	}
+	var user models.User
+	if err := database.DB.Where("id = ?", userId).First(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			u.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The user with ID %s not found.", userIdS))
+			return
+		}
+		panic(err)
+	}
+	if !isChildAvailable(authTenantId, *user.TenantId) {
+		u.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to tenant %s is forbidden", userIdS))
+		return
 	}
 	u.JsonSuccess(c, http.StatusOK, user.ToBasicUserSchema())
 }
