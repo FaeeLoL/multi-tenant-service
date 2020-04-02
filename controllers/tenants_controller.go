@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"github.com/faeelol/multi-tenant-service/database"
 	"github.com/faeelol/multi-tenant-service/models"
 	"github.com/gin-gonic/gin"
@@ -106,6 +107,38 @@ func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
 		}
 	}
 	t.JsonSuccess(c, http.StatusOK, results)
+}
+
+func (t TenantsController) GetTenant(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+	tenantIdS, ok := c.Params.Get("tenant_id")
+	if !ok {
+		t.JsonFail(c, http.StatusBadRequest, "empty tenant_id field")
+		return
+	}
+	tenantId, err := uuid.FromString(tenantIdS)
+	if err != nil {
+		t.JsonFail(c, http.StatusBadRequest, "invalid tenant_id format")
+		return
+	}
+	var tenant models.Tenant
+	if err := database.DB.Where("id = ?", tenantId).First(&tenant).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			t.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The tenant with ID %s not found.", tenantIdS))
+			return
+		}
+		panic(err)
+	}
+	if !isChildAvailable(authTenantId, tenantId) {
+		t.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to tenant %s is forbidden", tenantIdS))
+		return
+	}
+	t.JsonSuccess(c, http.StatusOK, tenant.ToBasicTenantSchema())
 }
 
 func isTenantNameFree(name string, parentId uuid.UUID) bool {
