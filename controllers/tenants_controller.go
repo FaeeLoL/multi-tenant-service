@@ -7,6 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"strings"
 )
 
 type TenantsController struct {
@@ -51,17 +52,60 @@ func (t TenantsController) CreateTenant(c *gin.Context) {
 	}
 
 	createTenant := models.Tenant{
-		ID: &newTenantId,
-		Name: newTenant.Name,
-		ParentId: &parentId,
-		OwnerId: &authTenantId,
+		ID:              &newTenantId,
+		Name:            newTenant.Name,
+		ParentId:        &parentId,
+		OwnerId:         &authTenantId,
 		AncestralAccess: true,
-		Version: 1,
+		Version:         1,
 	}
 	if err := database.DB.Create(&createTenant).Error; err != nil {
 		panic(err)
 	}
 	t.JsonSuccess(c, http.StatusCreated, createTenant.ToBasicTenantSchema())
+}
+
+func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+	var tenants []models.Tenant
+	var uuids []uuid.UUID
+	ids := c.Request.URL.Query().Get("uuids")
+	tenant := c.Request.URL.Query().Get("tenant_id")
+	if ids != "" {
+		for _, id := range strings.Split(ids, ",") {
+			if cur, err := uuid.FromString(id); err == nil {
+				uuids = append(uuids, cur)
+			}
+		}
+		if err := database.DB.Where("id IN (?)", uuids).Find(&tenants).Error; err != nil {
+			panic(err)
+		}
+	} else if tenant != "" {
+		parentId, err := uuid.FromString(tenant)
+		if err != nil {
+			t.JsonFail(c, http.StatusBadRequest, "invalid parent_id format")
+			return
+		}
+		if err := database.DB.Where("parent_id = ?", parentId).Find(&tenants).Error; err != nil {
+			panic(err)
+		}
+	} else {
+		t.JsonFail(c, http.StatusBadRequest, "specify `tenant_id` or `uuids` in query")
+		return
+	}
+	var results models.TenantsBatch
+	results.Items = make([]models.BasicTenantSchema, 0)
+	for _, tenant := range tenants {
+		if isChildAvailable(authTenantId, *tenant.ID) {
+			results.Items = append(results.Items, tenant.ToBasicTenantSchema())
+		}
+	}
+	t.JsonSuccess(c, http.StatusOK, results)
 }
 
 func isTenantNameFree(name string, parentId uuid.UUID) bool {
@@ -89,6 +133,7 @@ func isChildAvailable(parent uuid.UUID, child uuid.UUID) bool {
 		if *tenant.ParentId == *tenant.ID {
 			return false
 		}
+		current = *tenant.ParentId
 	}
 	return false
 }

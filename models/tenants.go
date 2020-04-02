@@ -24,10 +24,14 @@ type TenantPost struct {
 
 type BasicTenantSchema struct {
 	ID              string `json:"id"`
-	Version         int `json:"version"`
+	Version         int    `json:"version"`
 	Name            string `json:"name"`
 	ParentId        string `json:"parent_id"`
 	AncestralAccess bool   `json:"ancestral_access"`
+}
+
+type TenantsBatch struct {
+	Items []BasicTenantSchema `json:"items"`
 }
 
 func (t Tenant) ToBasicTenantSchema() BasicTenantSchema {
