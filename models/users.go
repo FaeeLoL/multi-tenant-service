@@ -52,6 +52,12 @@ type AuthUser struct {
 	Role     string `json:"role"`
 }
 
+type UserPut struct {
+	Login   *string `json:"login"`
+	Role    *string `json:"role"`
+	Version int `json:"version" binding:"required"`
+}
+
 type Password struct {
 	ID        *uuid.UUID `gorm:"type:uuid;primary_key"`
 	Password  string

@@ -156,8 +156,90 @@ func (u UsersController) GetUser(c *gin.Context) {
 		panic(err)
 	}
 	if !isChildAvailable(authTenantId, *user.TenantId) {
-		u.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to tenant %s is forbidden", userIdS))
+		u.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to user %s is forbidden", userIdS))
 		return
 	}
+	u.JsonSuccess(c, http.StatusOK, user.ToBasicUserSchema())
+}
+
+func (u UsersController) UpdateUser(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	if authUser.Role != models.TAdmin {
+		u.JsonFail(c, http.StatusForbidden, "Access is denied")
+		return
+	}
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+
+	userIdS, ok := c.Params.Get("user_id")
+	if !ok {
+		u.JsonFail(c, http.StatusBadRequest, "empty user_id field")
+		return
+	}
+	userId, err := uuid.FromString(userIdS)
+	if err != nil {
+		u.JsonFail(c, http.StatusBadRequest, "invalid user_id format")
+		return
+	}
+	var user models.User
+	tx := database.DB.Begin()
+	if err := tx.Where("id = ?", userId).First(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			u.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The user with ID %s not found.", userIdS))
+			tx.Rollback()
+			return
+		}
+		panic(err)
+	}
+	if !isChildAvailable(authTenantId, *user.TenantId) {
+		u.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to user %s is forbidden", userIdS))
+		tx.Rollback()
+		return
+	}
+
+	var userInfo models.UserPut
+	if err := c.Bind(&userInfo); err != nil {
+		u.JsonFail(c, http.StatusBadRequest, err.Error())
+		tx.Rollback()
+		return
+	}
+
+	if userInfo.Version != user.Version {
+		u.JsonFail(c, http.StatusConflict, "conflict in version")
+		tx.Rollback()
+		return
+	}
+
+	if userInfo.Role != nil {
+		if *userInfo.Role == models.TAdmin || *userInfo.Role == models.TUser {
+			user.Role = *userInfo.Role
+		} else {
+			u.JsonFail(c, http.StatusBadRequest, "Invalid user `role`")
+			tx.Rollback()
+			return
+		}
+	}
+	if userInfo.Login != nil {
+		if !isLoginFree(*userInfo.Login) {
+			u.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("Login %s is already taken", *userInfo.Login))
+			tx.Rollback()
+			return
+		}
+		user.Login = *userInfo.Login
+	}
+
+	user.Version += 1
+	if err := tx.Save(&user).Error; err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+
 	u.JsonSuccess(c, http.StatusOK, user.ToBasicUserSchema())
 }

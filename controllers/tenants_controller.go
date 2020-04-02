@@ -270,6 +270,7 @@ func (t TenantsController) DeleteTenant(c *gin.Context) {
 	if err := tx.Where("id = ?", tenantId).Find(&tenant).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			t.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The tenant with ID %s not found.", tenantIdS))
+			tx.Rollback()
 			return
 		}
 		tx.Rollback()
@@ -277,6 +278,7 @@ func (t TenantsController) DeleteTenant(c *gin.Context) {
 	}
 	if !isChildAvailable(authTenantId, tenantId) {
 		t.JsonFail(c, http.StatusForbidden, "access is denied")
+		tx.Rollback()
 		return
 	}
 	if version != tenant.Version {
