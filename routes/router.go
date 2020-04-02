@@ -37,7 +37,7 @@ func InitRoutes() *gin.Engine {
 		tenants.POST("/", tenantsController.CreateTenant)
 		tenants.GET("/", tenantsController.FetchTenantsBatch)
 		tenants.GET("/:tenant_id", tenantsController.GetTenant)
-	//	tenants.PUT("/:tenants_id", tenantsController.UpdateTenant)
+		tenants.PUT("/:tenant_id", tenantsController.UpdateTenant)
 	//	tenants.DELETE("/:tenants_id", tenantsController.DeleteTenant)
 	//	tenants.GET("/:tenants_id/children", tenantsController.GetTenantChildrenList)
 	//	tenants.GET("/:tenants_id/users", tenantsController.GetTenantUsersList)

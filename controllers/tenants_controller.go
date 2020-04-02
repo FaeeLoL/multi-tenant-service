@@ -141,6 +141,98 @@ func (t TenantsController) GetTenant(c *gin.Context) {
 	t.JsonSuccess(c, http.StatusOK, tenant.ToBasicTenantSchema())
 }
 
+func (t TenantsController) UpdateTenant(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	if authUser.Role != models.TAdmin {
+		t.JsonFail(c, http.StatusForbidden, "Access is denied")
+		return
+	}
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+
+	tenantIdS, ok := c.Params.Get("tenant_id")
+	if !ok {
+		t.JsonFail(c, http.StatusBadRequest, "empty tenant_id field")
+		return
+	}
+	tenantId, err := uuid.FromString(tenantIdS)
+	if err != nil {
+		t.JsonFail(c, http.StatusBadRequest, "invalid tenant_id format")
+		return
+	}
+
+	tx := database.DB.Begin()
+	var tenant models.Tenant
+	if err := tx.Where("ID = ?", tenantId).Find(&tenant).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			t.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The tenant with ID %s not found.", tenantIdS))
+			return
+		}
+		tx.Rollback()
+		panic(err)
+	}
+	if !isChildAvailable(authTenantId, tenantId) {
+		t.JsonFail(c, http.StatusForbidden, "access is denied")
+		return
+	}
+
+	var tenantInfo models.TenantPut
+	if err := c.Bind(&tenantInfo); err != nil {
+		t.JsonFail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if tenantInfo.Version != tenant.Version {
+		t.JsonFail(c, http.StatusConflict, "conflict in version")
+		tx.Rollback()
+		return
+	}
+
+	fmt.Printf("newInfo: %+v\n", tenantInfo)
+	if tenantInfo.ParentId != nil {
+		newParentId, err := uuid.FromString(*tenantInfo.ParentId)
+		if err != nil {
+			t.JsonFail(c, http.StatusBadRequest, "invalid parent_id format")
+			return
+		}
+		if !isChildAvailable(authTenantId, newParentId) {
+			t.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to %s is forbidden", newParentId))
+			return
+		}
+		if tenantInfo.Name != nil {
+			if !isTenantNameFree(tenant.Name, newParentId) {
+				t.JsonFail(c, http.StatusBadRequest,
+					fmt.Sprintf("tenant name %s is already taken under tenant %s",
+						*tenantInfo.Name, newParentId))
+				return
+			}
+		}
+		tenant.ParentId = &newParentId
+	}
+	if tenantInfo.Name != nil {
+		if !isTenantNameFree(*tenantInfo.Name, *tenant.ParentId) {
+			t.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("tenant name %s is already taken", *tenantInfo.Name))
+			return
+		}
+		tenant.Name = *tenantInfo.Name
+	}
+	if tenantInfo.AncestralAccess != nil {
+		tenant.AncestralAccess = *tenantInfo.AncestralAccess
+	}
+	tenant.Version += 1
+	if err := tx.Save(&tenant).Error; err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+	if err := tx.Commit().Error; err != nil {
+		panic(err)
+	}
+	t.JsonSuccess(c, http.StatusOK, tenant.ToBasicTenantSchema())
+}
+
 func isTenantNameFree(name string, parentId uuid.UUID) bool {
 	var user models.Tenant
 	return gorm.IsRecordNotFoundError(

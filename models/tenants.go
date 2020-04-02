@@ -22,6 +22,13 @@ type TenantPost struct {
 	ParentId string `json:"parent_id" binding:"required"`
 }
 
+type TenantPut struct {
+	Name            *string `json:"name"`
+	ParentId        *string `json:"parent_id"`
+	AncestralAccess *bool   `json:"ancestral_access"`
+	Version         int    `json:"version" binding:"required"`
+}
+
 type BasicTenantSchema struct {
 	ID              string `json:"id"`
 	Version         int    `json:"version"`
