@@ -40,7 +40,7 @@ func InitRoutes() *gin.Engine {
 		tenants.PUT("/:tenant_id", tenantsController.UpdateTenant)
 		tenants.DELETE("/:tenant_id", tenantsController.DeleteTenant)
 		tenants.GET("/:tenant_id/children", tenantsController.GetTenantChildrenList)
-	//	tenants.GET("/:tenant_id/users", tenantsController.GetTenantUsersList)
+		tenants.GET("/:tenant_id/users", tenantsController.GetTenantUsersList)
 	}
 
 	users := apiGroup.Group("/users")

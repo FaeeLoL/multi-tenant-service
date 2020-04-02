@@ -346,6 +346,60 @@ func (t TenantsController) GetTenantChildrenList(c *gin.Context) {
 	t.JsonSuccess(c, http.StatusOK, result)
 }
 
+func (t TenantsController) GetTenantUsersList(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	if authUser.Role != models.TAdmin {
+		t.JsonFail(c, http.StatusForbidden, "Access is denied")
+		return
+	}
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+
+	tenantIdS, ok := c.Params.Get("tenant_id")
+	if !ok {
+		t.JsonFail(c, http.StatusBadRequest, "empty tenant_id field")
+		return
+	}
+	tenantId, err := uuid.FromString(tenantIdS)
+	if err != nil {
+		t.JsonFail(c, http.StatusBadRequest, "invalid tenant_id format")
+		return
+	}
+	var tenant models.Tenant
+	if err := database.DB.Where("id = ?", tenantId).Find(&tenant).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			t.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The tenant with ID %s not found.", tenantIdS))
+			return
+		}
+		panic(err)
+	}
+	if !isChildAvailable(authTenantId, tenantId) {
+		t.JsonFail(c, http.StatusForbidden, "access is denied")
+		return
+	}
+	users, err := getTenantUsers(tenantId, database.DB)
+	if err != nil {
+		panic(err)
+	}
+	var result models.UsersBatch
+	result.Items = make([]models.BasicUserSchema, 0)
+	for _, user := range users {
+		result.Items = append(result.Items, user.ToBasicUserSchema())
+	}
+	t.JsonSuccess(c, http.StatusOK, result)
+}
+
+func getTenantUsers(id uuid.UUID, db *gorm.DB) ([]models.User, error) {
+	var res []models.User
+	if err := db.Where("tenant_id = ?", id).Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func deleteTenantsChildrenRecursive(tenantId uuid.UUID, tx *gorm.DB) error {
 	children, err := getTenantChildren(tenantId, tx)
 	if err != nil {
