@@ -11,7 +11,7 @@ const TUser = "tenant_user"
 type User struct {
 	ID        *uuid.UUID `gorm:"type:uuid;primary_key;"`
 	Login     string     `json:"login"`
-	TenantId  *uuid.UUID `gorm:"type:uuid";json:"tenant_id"`
+	TenantId  *uuid.UUID `gorm:"type:uuid" json:"tenant_id"`
 	Role      string
 	Version   int
 	CreatedAt time.Time
@@ -20,10 +20,10 @@ type User struct {
 }
 
 type UserPost struct {
-	Login    string `json:"login"`
-	TenantId string `json:"tenant_id"`
-	Role     string `json:"role"`
-	Password string `json:"password"`
+	Login    string `json:"login" binding:"required"`
+	TenantId string `json:"tenant_id" binding:"required"`
+	Role     string `json:"role" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 type BasicUserSchema struct {
