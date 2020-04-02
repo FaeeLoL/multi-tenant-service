@@ -14,7 +14,7 @@ func InitDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.DB().SetMaxIdleConns(1)
+	db.DB().SetMaxIdleConns(100)
 	DB = db
 	db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.Password{})
 	initRoots()

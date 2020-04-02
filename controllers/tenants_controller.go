@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -191,7 +192,6 @@ func (t TenantsController) UpdateTenant(c *gin.Context) {
 		return
 	}
 
-	fmt.Printf("newInfo: %+v\n", tenantInfo)
 	if tenantInfo.ParentId != nil {
 		newParentId, err := uuid.FromString(*tenantInfo.ParentId)
 		if err != nil {
@@ -231,6 +231,106 @@ func (t TenantsController) UpdateTenant(c *gin.Context) {
 		panic(err)
 	}
 	t.JsonSuccess(c, http.StatusOK, tenant.ToBasicTenantSchema())
+}
+
+func (t TenantsController) DeleteTenant(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	if authUser.Role != models.TAdmin {
+		t.JsonFail(c, http.StatusForbidden, "Access is denied")
+		return
+	}
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+
+	tenantIdS, ok := c.Params.Get("tenant_id")
+	if !ok {
+		t.JsonFail(c, http.StatusBadRequest, "empty tenant_id field")
+		return
+	}
+	tenantId, err := uuid.FromString(tenantIdS)
+	if err != nil {
+		t.JsonFail(c, http.StatusBadRequest, "invalid tenant_id format")
+		return
+	}
+	versionS := c.Request.URL.Query().Get("version")
+	if versionS == "" {
+		t.JsonFail(c, http.StatusBadRequest, "specify `version` in query")
+		return
+	}
+	version, err := strconv.Atoi(versionS)
+	if err != nil {
+		t.JsonFail(c, http.StatusBadRequest, "invalid `version` parameter")
+		return
+	}
+	tx := database.DB.Begin()
+	var tenant models.Tenant
+	if err := tx.Where("id = ?", tenantId).Find(&tenant).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			t.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The tenant with ID %s not found.", tenantIdS))
+			return
+		}
+		tx.Rollback()
+		panic(err)
+	}
+	if !isChildAvailable(authTenantId, tenantId) {
+		t.JsonFail(c, http.StatusForbidden, "access is denied")
+		return
+	}
+	if version != tenant.Version {
+		t.JsonFail(c, http.StatusConflict, "conflict in version")
+		tx.Rollback()
+		return
+	}
+	err = deleteTenantsChildrenRecursive(*tenant.ID, tx)
+	if err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+	if err := tx.Delete(&tenant).Error; err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+	t.JsonSuccess(c, http.StatusNoContent, nil)
+}
+
+func deleteTenantsChildrenRecursive(tenantId uuid.UUID, tx *gorm.DB) error {
+	children, err := getTenantChildren(tenantId, tx)
+	if err != nil {
+		return err
+	}
+	if len(children) == 0 {
+		return nil
+	} else {
+		for _, child := range children {
+			err = deleteTenantsChildrenRecursive(*child.ID, tx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	if err := deleteUsersOfTenant(tenantId, tx); err != nil {
+		return err
+	}
+	return tx.Where("parent_id = ?", tenantId).Delete(models.Tenant{}).Error
+}
+
+func deleteUsersOfTenant(tenantId uuid.UUID, tx *gorm.DB) error {
+	return tx.Where("tenant_id = ?", tenantId).Delete(models.User{}).Error
+}
+
+func getTenantChildren(tenantId uuid.UUID, tx *gorm.DB) ([]models.Tenant, error) {
+	var res []models.Tenant
+	if err := tx.Where("parent_id = ?", tenantId).Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func isTenantNameFree(name string, parentId uuid.UUID) bool {
