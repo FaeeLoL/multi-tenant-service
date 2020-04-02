@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/faeelol/multi-tenant-service/database"
 	"github.com/faeelol/multi-tenant-service/models"
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
 )
@@ -14,13 +14,60 @@ type TenantsController struct {
 }
 
 func (t TenantsController) CreateTenant(c *gin.Context) {
-	var newTenant models.Tenant
-	err := c.Bind(&newTenant)
-	if err != nil {
-		t.JsonFail(c, http.StatusBadRequest, "Bad request")
+	authUser := GetAuthUserClaims(c)
+	if authUser.Role != models.TAdmin {
+		t.JsonFail(c, http.StatusForbidden, "Access is denied")
+		return
 	}
-	fmt.Printf("new tenant data: %+v\n", newTenant)
 
+	var newTenant models.TenantPost
+	if err := c.Bind(&newTenant); err != nil {
+		t.JsonFail(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+	parentId, err := uuid.FromString(newTenant.ParentId)
+	if err != nil {
+		t.JsonFail(c, http.StatusBadRequest, "invalid parent_id format")
+		return
+	}
+	if !isChildAvailable(authTenantId, parentId) {
+		t.JsonFail(c, http.StatusForbidden, "access is denied")
+		return
+	}
+	if !isTenantNameFree(newTenant.Name, parentId) {
+		t.JsonFail(c, http.StatusBadRequest, "name is already taken")
+		return
+	}
+
+	newTenantId, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+
+	createTenant := models.Tenant{
+		ID: &newTenantId,
+		Name: newTenant.Name,
+		ParentId: &parentId,
+		OwnerId: &authTenantId,
+		AncestralAccess: true,
+		Version: 1,
+	}
+	if err := database.DB.Create(&createTenant).Error; err != nil {
+		panic(err)
+	}
+	t.JsonSuccess(c, http.StatusCreated, createTenant.ToBasicTenantSchema())
+}
+
+func isTenantNameFree(name string, parentId uuid.UUID) bool {
+	var user models.Tenant
+	return gorm.IsRecordNotFoundError(
+		database.DB.Where("name = ? AND parent_id = ?", name, parentId).First(&user).Error)
 }
 
 func isChildAvailable(parent uuid.UUID, child uuid.UUID) bool {

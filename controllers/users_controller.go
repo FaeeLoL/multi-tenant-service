@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"github.com/faeelol/multi-tenant-service/database"
 	"github.com/faeelol/multi-tenant-service/models"
 	"github.com/gin-gonic/gin"
@@ -24,7 +23,7 @@ func (u UsersController) CreateUser(c *gin.Context) {
 	}
 	var newUser models.UserPost
 	if err := c.Bind(&newUser); err != nil {
-		u.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("bind fail: %+v", err.Error()))
+		u.JsonFail(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	authTenantId, err := uuid.FromString(authUser.TenantId)
