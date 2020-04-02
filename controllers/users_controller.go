@@ -90,10 +90,12 @@ func (u UsersController) GetUsersBatch(c *gin.Context) {
 		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
 		return
 	}
+	var results models.UsersBatch
+	results.Items = make([]models.BasicUserSchema, 0)
 	var uuids []uuid.UUID
 	ids := c.Request.URL.Query().Get("uuids")
 	if ids == "" {
-		u.JsonSuccess(c, http.StatusOK, models.UsersBatch{})
+		u.JsonSuccess(c, http.StatusOK, results)
 		return
 	}
 	for _, id := range strings.Split(ids, ",") {
@@ -105,7 +107,6 @@ func (u UsersController) GetUsersBatch(c *gin.Context) {
 	if err := database.DB.Where("id IN (?)", uuids).Find(&users).Error; err != nil {
 		panic(err)
 	}
-	var results models.UsersBatch
 	for _, user := range users {
 		if isChildAvailable(authTenantId, *user.TenantId) {
 			results.Items = append(results.Items, user.ToBasicUserSchema())
