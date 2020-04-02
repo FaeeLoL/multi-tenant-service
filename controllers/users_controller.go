@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -242,4 +243,68 @@ func (u UsersController) UpdateUser(c *gin.Context) {
 	}
 
 	u.JsonSuccess(c, http.StatusOK, user.ToBasicUserSchema())
+}
+
+func (u UsersController) DeleteUser(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	if authUser.Role != models.TAdmin {
+		u.JsonFail(c, http.StatusForbidden, "Access is denied")
+		return
+	}
+	authTenantId, err := uuid.FromString(authUser.TenantId)
+	if err != nil {
+		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+
+	userIdS, ok := c.Params.Get("user_id")
+	if !ok {
+		u.JsonFail(c, http.StatusBadRequest, "empty user_id field")
+		return
+	}
+	userId, err := uuid.FromString(userIdS)
+	if err != nil {
+		u.JsonFail(c, http.StatusBadRequest, "invalid user_id format")
+		return
+	}
+	versionS := c.Request.URL.Query().Get("version")
+	if versionS == "" {
+		u.JsonFail(c, http.StatusBadRequest, "specify `version` in query")
+		return
+	}
+	version, err := strconv.Atoi(versionS)
+	if err != nil {
+		u.JsonFail(c, http.StatusBadRequest, "invalid `version` parameter")
+		return
+	}
+	tx := database.DB.Begin()
+	var user models.User
+	if err := tx.Where("id = ?", userId).Find(&user).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			u.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The user with ID %s not found.", userIdS))
+			tx.Rollback()
+			return
+		}
+		tx.Rollback()
+		panic(err)
+	}
+	if !isChildAvailable(authTenantId, *user.TenantId) {
+		u.JsonFail(c, http.StatusForbidden, "access is denied")
+		tx.Rollback()
+		return
+	}
+	if version != user.Version {
+		u.JsonFail(c, http.StatusConflict, "conflict in version")
+		tx.Rollback()
+		return
+	}
+	if err := tx.Delete(&user).Error; err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		panic(err)
+	}
+	u.JsonSuccess(c, http.StatusNoContent, nil)
 }

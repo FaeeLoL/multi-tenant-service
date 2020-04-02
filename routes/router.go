@@ -49,9 +49,9 @@ func InitRoutes() *gin.Engine {
 		users.POST("/", usersController.CreateUser)
 		users.GET("/", usersController.GetUsersBatch)
 		users.GET("/:user_id", usersController.GetUser)
-		//users.GET("/me", usersController.GetSelfInfo)
+		//users.GET("/me", usersController.GetSelfInfo)		//todo resolve wildcard conflict
 		users.PUT("/:user_id", usersController.UpdateUser)
-		//users.PUT("/:user_id", usersController.DeleteUser)
+		users.DELETE("/:user_id", usersController.DeleteUser)
 	}
 
 	return router
