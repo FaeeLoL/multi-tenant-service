@@ -114,3 +114,17 @@ func (u UsersController) GetUsersBatch(c *gin.Context) {
 	}
 	u.JsonSuccess(c, http.StatusOK, results)
 }
+
+func (u UsersController) GetSelfInfo(c *gin.Context) {
+	authUser := GetAuthUserClaims(c)
+	authUserId, err := uuid.FromString(authUser.ID)
+	if err != nil {
+		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		return
+	}
+	var user models.User
+	if err := database.DB.Where("id = ?", authUserId).Find(&user).Error; err != nil {
+		panic(err)
+	}
+	u.JsonSuccess(c, http.StatusOK, user.ToBasicUserSchema())
+}

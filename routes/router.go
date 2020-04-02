@@ -48,10 +48,10 @@ func InitRoutes() *gin.Engine {
 		usersController := new(controllers.UsersController)
 		users.POST("/", usersController.CreateUser)
 		users.GET("/", usersController.GetUsersBatch)
-		//users.GET("me", usersController.GetSelfInfo)
+		users.GET("/me", usersController.GetSelfInfo)
 		//users.GET("/:user_id", usersController.GetUser)
-		//users.PUT(":user_id", usersController.UpdateUser)
-		//users.PUT(":user_id", usersController.DeleteUser)
+		//users.PUT("/:user_id", usersController.UpdateUser)
+		//users.PUT("/:user_id", usersController.DeleteUser)
 	}
 
 	return router
