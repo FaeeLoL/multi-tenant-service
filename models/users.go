@@ -32,7 +32,7 @@ type BasicUserSchema struct {
 	TenantId  string `json:"tenant_id"`
 	Role      string `json:"role"`
 	Version   int    `json:"version"`
-	CreatedAt string `json:"CreatedAt"`
+	CreatedAt string `json:"created_at"`
 }
 
 func (u User) ToBasicUserSchema() BasicUserSchema {

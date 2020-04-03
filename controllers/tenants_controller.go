@@ -71,13 +71,13 @@ func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
 	authUser := GetAuthUserClaims(c)
 	authTenantId, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
-		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+		t.JsonFail(c, http.StatusConflict, "invalid authorized parentId")
 		return
 	}
 	var tenants []models.Tenant
 	var uuids []uuid.UUID
-	ids := c.Request.URL.Query().Get("uuids")
-	tenant := c.Request.URL.Query().Get("tenant_id")
+	ids := c.Request.URL.Query().Get("tenant_id")
+	parentId := c.Request.URL.Query().Get("parent_id")
 	if ids != "" {
 		for _, id := range strings.Split(ids, ",") {
 			if cur, err := uuid.FromString(id); err == nil {
@@ -87,10 +87,14 @@ func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
 		if err := database.DB.Where("id IN (?)", uuids).Find(&tenants).Error; err != nil {
 			panic(err)
 		}
-	} else if tenant != "" {
-		parentId, err := uuid.FromString(tenant)
+	} else if parentId != "" {
+		parentId, err := uuid.FromString(parentId)
 		if err != nil {
 			t.JsonFail(c, http.StatusBadRequest, "invalid parent_id format")
+			return
+		}
+		if !isChildAvailable(authTenantId, parentId) {
+			t.JsonFail(c, http.StatusForbidden, "access is denied")
 			return
 		}
 		if err := database.DB.Where("parent_id = ?", parentId).Find(&tenants).Error; err != nil {

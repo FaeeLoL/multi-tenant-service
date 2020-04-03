@@ -26,13 +26,14 @@ type TenantPut struct {
 	Name            *string `json:"name"`
 	ParentId        *string `json:"parent_id"`
 	AncestralAccess *bool   `json:"ancestral_access"`
-	Version         int    `json:"version" binding:"required"`
+	Version         int     `json:"version" binding:"required"`
 }
 
 type BasicTenantSchema struct {
 	ID              string `json:"id"`
 	Version         int    `json:"version"`
 	Name            string `json:"name"`
+	OwnerId         string `json:"owner_id"`
 	ParentId        string `json:"parent_id"`
 	AncestralAccess bool   `json:"ancestral_access"`
 }
@@ -46,6 +47,7 @@ func (t Tenant) ToBasicTenantSchema() BasicTenantSchema {
 		ID:              t.ID.String(),
 		Version:         t.Version,
 		Name:            t.Name,
+		OwnerId:         t.OwnerId.String(),
 		ParentId:        t.ParentId.String(),
 		AncestralAccess: t.AncestralAccess,
 	}
