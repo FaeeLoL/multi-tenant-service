@@ -116,7 +116,7 @@ func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
 
 func (t TenantsController) GetTenant(c *gin.Context) {
 	authUser := GetAuthUserClaims(c)
-	authTenantId, err := uuid.FromString(authUser.TenantId)
+	_, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
 		return
@@ -139,10 +139,10 @@ func (t TenantsController) GetTenant(c *gin.Context) {
 		}
 		panic(err)
 	}
-	if !isChildAvailable(authTenantId, tenantId) {
-		t.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to tenant %s is forbidden", tenantIdS))
-		return
-	}
+	//if !isChildAvailable(authTenantId, tenantId) {
+	//	t.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to tenant %s is forbidden", tenantIdS))
+	//	return
+	//}
 	t.JsonSuccess(c, http.StatusOK, tenant.ToBasicTenantSchema())
 }
 
