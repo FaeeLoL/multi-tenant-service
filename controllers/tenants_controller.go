@@ -312,7 +312,7 @@ func (t TenantsController) GetTenantChildrenList(c *gin.Context) {
 		t.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
 	}
-	authTenantId, err := uuid.FromString(authUser.TenantId)
+	_, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
 		return
@@ -336,10 +336,10 @@ func (t TenantsController) GetTenantChildrenList(c *gin.Context) {
 		}
 		panic(err)
 	}
-	if !isChildAvailable(authTenantId, tenantId) {
-		t.JsonFail(c, http.StatusForbidden, "access is denied")
-		return
-	}
+	//if !isChildAvailable(authTenantId, tenantId) {
+	//	t.JsonFail(c, http.StatusForbidden, "access is denied")
+	//	return
+	//}
 	children, err := getTenantChildren(tenantId, database.DB)
 	if err != nil {
 		panic(err)
