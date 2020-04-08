@@ -307,16 +307,16 @@ func (t TenantsController) DeleteTenant(c *gin.Context) {
 }
 
 func (t TenantsController) GetTenantChildrenList(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
-	if authUser.Role != models.TAdmin {
-		t.JsonFail(c, http.StatusForbidden, "Access is denied")
-		return
-	}
-	_, err := uuid.FromString(authUser.TenantId)
-	if err != nil {
-		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
-		return
-	}
+	//authUser := GetAuthUserClaims(c)
+	//if authUser.Role != models.TAdmin {
+	//	t.JsonFail(c, http.StatusForbidden, "Access is denied")
+	//	return
+	//}
+	//_, err := uuid.FromString(authUser.TenantId)
+	//if err != nil {
+	//	t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
+	//	return
+	//}
 
 	tenantIdS, ok := c.Params.Get("tenant_id")
 	if !ok {

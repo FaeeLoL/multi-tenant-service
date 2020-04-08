@@ -14,6 +14,7 @@ func InitRoutes() *gin.Engine {
 	//router.Use(gin.Recovery())
 
 	apiGroup := router.Group("/api/v1")
+	publicGRoup := router.Group("/api/v1")
 	authGroup := apiGroup.Group("/auth")
 	{
 		authController := new(controllers.AuthController)
@@ -39,7 +40,7 @@ func InitRoutes() *gin.Engine {
 		tenants.GET("/:tenant_id", tenantsController.GetTenant)
 		tenants.PUT("/:tenant_id", tenantsController.UpdateTenant)
 		tenants.DELETE("/:tenant_id", tenantsController.DeleteTenant)
-		tenants.GET("/:tenant_id/children", tenantsController.GetTenantChildrenList)
+		publicGRoup.GET("/tenants/:tenant_id/children", tenantsController.GetTenantChildrenList)
 		tenants.GET("/:tenant_id/users", tenantsController.GetTenantUsersList)
 	}
 
