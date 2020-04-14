@@ -14,12 +14,12 @@ func InitRoutes() *gin.Engine {
 	//router.Use(gin.Recovery())
 
 	apiGroup := router.Group("/api/v1")
-	publicGRoup := router.Group("/api/v1")
-	authGroup := apiGroup.Group("/auth")
+	publicGroup := router.Group("/api/v1")
+	authGroup := router.Group("/api/2/idp")
 	{
 		authController := new(controllers.AuthController)
 		authMiddleware := authController.Init()
-		authGroup.POST("login", authMiddleware.LoginHandler)
+		authGroup.POST("/token", authMiddleware.LoginHandler)
 		authGroup.GET("/refresh_token", authMiddleware.RefreshHandler)
 		//authGroup.Use(authMiddleware.MiddlewareFunc())
 		apiGroup.Use(authMiddleware.MiddlewareFunc())
@@ -40,7 +40,7 @@ func InitRoutes() *gin.Engine {
 		tenants.GET("/:tenant_id", tenantsController.GetTenant)
 		tenants.PUT("/:tenant_id", tenantsController.UpdateTenant)
 		tenants.DELETE("/:tenant_id", tenantsController.DeleteTenant)
-		publicGRoup.GET("/tenants/:tenant_id/children", tenantsController.GetTenantChildrenList)
+		publicGroup.GET("/tenants/:tenant_id/children", tenantsController.GetTenantChildrenList)
 		tenants.GET("/:tenant_id/users", tenantsController.GetTenantUsersList)
 	}
 

@@ -14,7 +14,7 @@ type AuthController struct {
 }
 
 type loginFields struct {
-	Login    string `form:"login" json:"login" binding:"required"`
+	Username string `form:"username" json:"username" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
@@ -48,7 +48,7 @@ func (a AuthController) Init() *jwt.GinJWTMiddleware {
 			if err := c.ShouldBind(&loginVals); err != nil {
 				return "", jwt.ErrMissingLoginValues
 			}
-			login := loginVals.Login
+			login := loginVals.Username
 			password := loginVals.Password
 			var user models.User
 			if err := database.DB.Where("login = ?", login).First(&user).Error; err != nil {
@@ -69,6 +69,13 @@ func (a AuthController) Init() *jwt.GinJWTMiddleware {
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
 			return true
+		},
+		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(code, gin.H{
+				"access_token" : token,
+				"token_type": "bearer",
+				"expires_on": expire.Unix(),
+			})
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			c.JSON(code, gin.H{
