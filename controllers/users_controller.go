@@ -225,7 +225,7 @@ func (u UsersController) UpdateUser(c *gin.Context) {
 	}
 	if userInfo.Login != nil {
 		if !isLoginFree(*userInfo.Login) {
-			u.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("Login %s is already taken", *userInfo.Login))
+			u.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("Username %s is already taken", *userInfo.Login))
 			tx.Rollback()
 			return
 		}

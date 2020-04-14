@@ -14,11 +14,11 @@ func InitRoutes() *gin.Engine {
 	//router.Use(gin.Recovery())
 
 	apiGroup := router.Group("/api/v1")
-	authGroup := apiGroup.Group("/auth")
+	authGroup := router.Group("/api/2/idp")
 	{
 		authController := new(controllers.AuthController)
 		authMiddleware := authController.Init()
-		authGroup.POST("login", authMiddleware.LoginHandler)
+		authGroup.POST("/token", authMiddleware.LoginHandler)
 		authGroup.GET("/refresh_token", authMiddleware.RefreshHandler)
 		//authGroup.Use(authMiddleware.MiddlewareFunc())
 		apiGroup.Use(authMiddleware.MiddlewareFunc())
