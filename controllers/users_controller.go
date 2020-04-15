@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/faeelol/multi-tenant-service/controllers/oauth2"
 	"github.com/faeelol/multi-tenant-service/database"
 	"github.com/faeelol/multi-tenant-service/models"
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ type UsersController struct {
 
 func (u UsersController) CreateUser(c *gin.Context) {
 
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		u.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
@@ -86,7 +87,7 @@ func isLoginFree(login string) bool {
 }
 
 func (u UsersController) GetUsersBatch(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	authTenantId, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
@@ -118,7 +119,7 @@ func (u UsersController) GetUsersBatch(c *gin.Context) {
 }
 
 func (u UsersController) GetSelfInfo(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	authUserId, err := uuid.FromString(authUser.ID)
 	if err != nil {
 		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
@@ -132,7 +133,7 @@ func (u UsersController) GetSelfInfo(c *gin.Context) {
 }
 
 func (u UsersController) GetUser(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	authTenantId, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
@@ -164,7 +165,7 @@ func (u UsersController) GetUser(c *gin.Context) {
 }
 
 func (u UsersController) UpdateUser(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		u.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
@@ -246,7 +247,7 @@ func (u UsersController) UpdateUser(c *gin.Context) {
 }
 
 func (u UsersController) DeleteUser(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		u.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
