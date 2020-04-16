@@ -19,18 +19,22 @@ import (
 
 var srv *server.Server
 
-func InitOauth2() {
+var defaultClientID = "000000"
+var defaultClientSecret = "999999"
+var defaultClientDomain = "http://localhost:8080"
+var defaultTokenSecret = "token secret"
 
+func InitOauth2() {
 	manager := manage.NewDefaultManager()
 	clientStore := store.NewClientStore()
-	clientStore.Set("000000", &models.Client{
-		ID:     "000000",
-		Secret: "999999",
-		Domain: "http://localhost:8080",
+	clientStore.Set(defaultClientID, &models.Client{
+		ID:     defaultClientID,
+		Secret: defaultClientSecret,
+		Domain: defaultClientDomain,
 	})
 	manager.MapClientStorage(clientStore)
-	manager.MustTokenStorage(store.NewMemoryTokenStore())
-	manager.MapAccessGenerate(generates.NewJWTAccessGenerate([]byte("secure token"), jwt.SigningMethodHS256))
+	manager.MustTokenStorage(store.NewFileTokenStore("tokens.db"))
+	manager.MapAccessGenerate(generates.NewJWTAccessGenerate([]byte(defaultTokenSecret), jwt.SigningMethodHS256))
 	srv = server.NewDefaultServer(manager)
 	srv.SetClientInfoHandler(clientInfoHandler)
 	srv.SetPasswordAuthorizationHandler(passwordAuthHandler)
@@ -56,8 +60,8 @@ func HandleTokenRequest(c *gin.Context) {
 }
 
 func clientInfoHandler(r *http.Request) (clientID, clientSecret string, err error) {
-	clientID = "000000"
-	clientSecret = "999999"
+	clientID = defaultClientID
+	clientSecret = defaultClientSecret
 	return
 }
 
