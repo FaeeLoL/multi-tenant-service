@@ -33,7 +33,7 @@ func InitOauth2() {
 		Domain: defaultClientDomain,
 	})
 	manager.MapClientStorage(clientStore)
-	manager.MustTokenStorage(store.NewFileTokenStore("tokens.db"))
+	manager.MustTokenStorage(store.NewFileTokenStore("./data/tokens.db"))
 	manager.MapAccessGenerate(generates.NewJWTAccessGenerate([]byte(defaultTokenSecret), jwt.SigningMethodHS256))
 	srv = server.NewDefaultServer(manager)
 	srv.SetClientInfoHandler(clientInfoHandler)

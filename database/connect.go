@@ -10,7 +10,7 @@ import (
 var DB *gorm.DB
 
 func InitDB() (*gorm.DB, error) {
-	db, err := gorm.Open("sqlite3", "./service.db")
+	db, err := gorm.Open("sqlite3", "./data/service.db")
 	if err != nil {
 		return nil, err
 	}
