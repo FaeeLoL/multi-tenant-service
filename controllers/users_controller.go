@@ -133,7 +133,7 @@ func (u UsersController) GetSelfInfo(c *gin.Context) {
 }
 
 func (u UsersController) GetUser(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	_, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")

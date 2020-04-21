@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/faeelol/multi-tenant-service/controllers/oauth2"
 	"github.com/faeelol/multi-tenant-service/database"
 	"github.com/faeelol/multi-tenant-service/models"
-	"github.com/faeelol/multi-tenant-service/controllers/oauth2"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -116,7 +116,7 @@ func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
 }
 
 func (t TenantsController) GetTenant(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	_, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
