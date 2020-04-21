@@ -19,10 +19,11 @@ import (
 
 var srv *server.Server
 
-var defaultClientID = "000000"
-var defaultClientSecret = "999999"
-var defaultClientDomain = "http://localhost:8080"
-var defaultTokenSecret = "token secret"
+const defaultClientID = "000000"
+const defaultClientSecret = "999999"
+const defaultClientDomain = "http://localhost:8080"
+const defaultTokenSecret = "token secret"
+const tokenExpTime = 2 * time.Hour
 
 func InitOauth2() {
 	manager := manage.NewDefaultManager()
@@ -35,10 +36,23 @@ func InitOauth2() {
 	manager.MapClientStorage(clientStore)
 	manager.MustTokenStorage(store.NewFileTokenStore("./data/tokens.db"))
 	manager.MapAccessGenerate(generates.NewJWTAccessGenerate([]byte(defaultTokenSecret), jwt.SigningMethodHS256))
+	manager.SetPasswordTokenCfg(&manage.Config{
+		AccessTokenExp:    tokenExpTime,
+		RefreshTokenExp:   tokenExpTime,
+		IsGenerateRefresh: true,
+	})
 	srv = server.NewDefaultServer(manager)
 	srv.SetClientInfoHandler(clientInfoHandler)
 	srv.SetPasswordAuthorizationHandler(passwordAuthHandler)
 	srv.SetAllowedGrantType(oauth2.PasswordCredentials)
+
+	// set expires_on field
+	srv.SetExtensionFieldsHandler(func(ti oauth2.TokenInfo) (fieldsValue map[string]interface{}) {
+		fieldsValue = map[string]interface{}{
+			"expires_on": time.Now().Add(tokenExpTime).Unix(),
+		}
+		return
+	})
 }
 
 func HandleAuthorizeRequest(c *gin.Context) {
