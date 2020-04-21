@@ -133,8 +133,8 @@ func (u UsersController) GetSelfInfo(c *gin.Context) {
 }
 
 func (u UsersController) GetUser(c *gin.Context) {
-	authUser := oauth2.GetAuthUserClaims(c)
-	authTenantId, err := uuid.FromString(authUser.TenantId)
+	authUser := GetAuthUserClaims(c)
+	_, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		u.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
 		return
@@ -157,10 +157,10 @@ func (u UsersController) GetUser(c *gin.Context) {
 		}
 		panic(err)
 	}
-	if !isChildAvailable(authTenantId, *user.TenantId) {
-		u.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to user %s is forbidden", userIdS))
-		return
-	}
+	//if !isChildAvailable(authTenantId, *user.TenantId) {
+	//	u.JsonFail(c, http.StatusForbidden, fmt.Sprintf("access to user %s is forbidden", userIdS))
+	//	return
+	//}
 	u.JsonSuccess(c, http.StatusOK, user.ToBasicUserSchema())
 }
 
