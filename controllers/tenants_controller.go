@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/faeelol/multi-tenant-service/database"
 	"github.com/faeelol/multi-tenant-service/models"
+	"github.com/faeelol/multi-tenant-service/controllers/oauth2"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	uuid "github.com/satori/go.uuid"
@@ -17,7 +18,7 @@ type TenantsController struct {
 }
 
 func (t TenantsController) CreateTenant(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		t.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
@@ -68,7 +69,7 @@ func (t TenantsController) CreateTenant(c *gin.Context) {
 }
 
 func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	authTenantId, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		t.JsonFail(c, http.StatusConflict, "invalid authorized parentId")
@@ -115,7 +116,7 @@ func (t TenantsController) FetchTenantsBatch(c *gin.Context) {
 }
 
 func (t TenantsController) GetTenant(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	authTenantId, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
@@ -147,7 +148,7 @@ func (t TenantsController) GetTenant(c *gin.Context) {
 }
 
 func (t TenantsController) UpdateTenant(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		t.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
@@ -238,7 +239,7 @@ func (t TenantsController) UpdateTenant(c *gin.Context) {
 }
 
 func (t TenantsController) DeleteTenant(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		t.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
@@ -307,7 +308,7 @@ func (t TenantsController) DeleteTenant(c *gin.Context) {
 }
 
 func (t TenantsController) GetTenantChildrenList(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		t.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return
@@ -353,7 +354,7 @@ func (t TenantsController) GetTenantChildrenList(c *gin.Context) {
 }
 
 func (t TenantsController) GetTenantUsersList(c *gin.Context) {
-	authUser := GetAuthUserClaims(c)
+	authUser := oauth2.GetAuthUserClaims(c)
 	if authUser.Role != models.TAdmin {
 		t.JsonFail(c, http.StatusForbidden, "Access is denied")
 		return

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/faeelol/multi-tenant-service/controllers"
+	"github.com/faeelol/multi-tenant-service/controllers/oauth2"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -11,25 +12,17 @@ func InitRoutes() *gin.Engine {
 
 	router.Use(cors.Default())
 	router.Use(gin.Logger())
-	//router.Use(gin.Recovery())
-
+	oauth2.InitOauth2()
 	apiGroup := router.Group("/api/v1")
-	authGroup := apiGroup.Group("/auth")
+	authGroup := router.Group("/api/2/idp")
 	{
-		authController := new(controllers.AuthController)
-		authMiddleware := authController.Init()
-		authGroup.POST("login", authMiddleware.LoginHandler)
-		authGroup.GET("/refresh_token", authMiddleware.RefreshHandler)
-		//authGroup.Use(authMiddleware.MiddlewareFunc())
-		apiGroup.Use(authMiddleware.MiddlewareFunc())
+		//authController := new(controllers.AuthController)
+		//authMiddleware := authController.Init()
+		authGroup.POST("/token", oauth2.HandleTokenRequest)
+		//authGroup.GET("/refresh_token", )
+		//authGroup.Use(authMiddleware.Middlew areFunc())
+		apiGroup.Use(oauth2.VerifyToken)
 	}
-
-
-	//router.NoRoute(authMiddleware.MiddlewareFunc(), func(c *gin.Context) {
-	//	claims := jwt.ExtractClaims(c)
-	//	log.Printf("NoRoute claims: %#v\n", claims)
-	//	c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
-	//})
 
 	tenants := apiGroup.Group("/tenants")
 	{
