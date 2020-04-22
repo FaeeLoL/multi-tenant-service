@@ -2,19 +2,20 @@ package oauth2
 
 import (
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
+	"net/http"
+	"time"
+
 	"github.com/faeelol/multi-tenant-service/database"
 	dbModels "github.com/faeelol/multi-tenant-service/models"
+	
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/go-oauth2/oauth2/generates"
 	"github.com/go-oauth2/oauth2/manage"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/oauth2.v3"
 	"gopkg.in/oauth2.v3/models"
 	"gopkg.in/oauth2.v3/server"
 	"gopkg.in/oauth2.v3/store"
-	"net/http"
-	"time"
 )
 
 var srv *server.Server
@@ -35,7 +36,7 @@ func InitOauth2() {
 	})
 	manager.MapClientStorage(clientStore)
 	manager.MustTokenStorage(store.NewFileTokenStore("./data/tokens.db"))
-	manager.MapAccessGenerate(generates.NewJWTAccessGenerate([]byte(defaultTokenSecret), jwt.SigningMethodHS256))
+	manager.MapAccessGenerate(newAccessGenerate([]byte(defaultTokenSecret), jwt.SigningMethodHS256))
 	manager.SetPasswordTokenCfg(&manage.Config{
 		AccessTokenExp:    tokenExpTime,
 		RefreshTokenExp:   tokenExpTime,
