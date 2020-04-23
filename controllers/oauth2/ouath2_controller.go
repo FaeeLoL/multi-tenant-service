@@ -7,7 +7,7 @@ import (
 
 	"github.com/faeelol/multi-tenant-service/database"
 	dbModels "github.com/faeelol/multi-tenant-service/models"
-	
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/manage"
@@ -46,6 +46,9 @@ func InitOauth2() {
 	srv.SetClientInfoHandler(clientInfoHandler)
 	srv.SetPasswordAuthorizationHandler(passwordAuthHandler)
 	srv.SetAllowedGrantType(oauth2.PasswordCredentials)
+	//srv.SetExtensionFieldsHandler(func(ti oauth2.TokenInfo) (fieldsValue map[string]interface{}){
+	//	jwt.Parse()
+	//})
 
 	// set expires_on field
 	srv.SetExtensionFieldsHandler(func(ti oauth2.TokenInfo) (fieldsValue map[string]interface{}) {
@@ -107,29 +110,37 @@ func VerifyToken(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		c.Abort()
 	}
-
+	var cl claims
+	tk, err := jwt.ParseWithClaims(ti.GetAccess(), &cl, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("parse error")
+		}
+		return []byte(defaultTokenSecret), nil
+	})
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "token parse error"})
+		c.Abort()
+	}
 	if ti.GetAccessCreateAt().Add(ti.GetAccessExpiresIn()).Unix() < time.Now().Unix() {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "token is expired"})
+		c.Abort()
 	}
-	c.Set("secure token", ti)
+	c.Set("oauth2_token", ti)
+	c.Set("jwt_token", tk)
+	c.Set("claims", cl)
 	c.Next()
 }
 
 func GetAuthUserClaims(c *gin.Context) dbModels.AuthUser {
-	var ti oauth2.TokenInfo
-	if t, ok := c.Get("secure token"); ok {
-		ti = t.(oauth2.TokenInfo)
+	var cl claims
+	if v, ok := c.Get("claims"); ok {
+		cl = v.(claims)
 	} else {
-		panic(fmt.Errorf("lost token"))
-	}
-	userID := ti.GetUserID()
-	var user dbModels.User
-	if err := database.DB.Where("id = ?", userID).First(&user).Error; err != nil {
-		panic(err)
+		panic(fmt.Errorf("invalid claims"))
 	}
 	return dbModels.AuthUser{
-		ID:       userID,
-		TenantId: user.TenantId.String(),
-		Role:     user.Role,
+		ID:       cl.UserId,
+		TenantId: cl.Scope.TenantId,
+		Role:     cl.Scope.Role,
 	}
 }
