@@ -194,7 +194,71 @@ func (a ApplicationsController) DeleteApplication(c *gin.Context) {
 	}
 	a.JsonSuccess(c, http.StatusNoContent, nil)
 }
+func (a ApplicationsController) GetAplicationServicesList(c *gin.Context) {
+	applicationIdS, ok := c.Params.Get("app_id")
+	if !ok {
+		a.JsonFail(c, http.StatusBadRequest, "empty app_id field")
+		return
+	}
+	applicationId, err := uuid.FromString(applicationIdS)
+	if err != nil {
+		a.JsonFail(c, http.StatusBadRequest, "invalid app_id format")
+		return
+	}
+	var application models.Application
+	if err := database.DB.Where("id = ?", applicationId).Find(&application).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			a.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The tenant with ID %s not found.", applicationIdS))
+			return
+		}
+		panic(err)
+	}
 
+	var services []models.Service
+	if err := database.DB.Where("app_id = ?", applicationId).Find(&services).Error; err != nil {
+		panic(err)
+	} // what about app itself?
+
+	var result models.ServicesBatch
+	result.Items = make([]models.BasicServiceSchema, 0)
+	for _, service := range services {
+		result.Items = append(result.Items, service.ToBasicServiceSchema())
+	}
+	a.JsonSuccess(c, http.StatusOK, result)
+}
+
+func (a ApplicationsController) GetAplicationService(c *gin.Context) {
+	appIdS, ok := c.Params.Get("app_id")
+	if !ok {
+		a.JsonFail(c, http.StatusBadRequest, "empty app_id field")
+		return
+	}
+	appId, err := uuid.FromString(appIdS)
+	if err != nil {
+		a.JsonFail(c, http.StatusBadRequest, "invalid app_id format")
+		return
+	}
+	serviceIdS, ok := c.Params.Get("service_id")
+	if !ok {
+		a.JsonFail(c, http.StatusBadRequest, "empty service_id field")
+		return
+	}
+	serviceId, err := uuid.FromString(serviceIdS)
+	if err != nil {
+		a.JsonFail(c, http.StatusBadRequest, "invalid service_id format")
+		return
+	}
+	//add transaction?
+	var service models.Service
+	if err := database.DB.Where("id = ? AND app_id = ?", serviceId, appId).First(&service).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			a.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The service with ID %s att application %s not found.", serviceIdS, appIdS))
+			return
+		}
+		panic(err)
+	}
+	a.JsonSuccess(c, http.StatusOK, service.ToBasicServiceSchema())
+}
 func isApplicationNameFree(name string) bool {
 	var app models.Application
 	return gorm.IsRecordNotFoundError(

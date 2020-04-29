@@ -56,6 +56,8 @@ func InitRoutes() *gin.Engine {
 		aplications.GET("/:app_id", aplicationsController.GetApplication)
 		aplications.PUT("/:app_id", aplicationsController.UpdateApplication)
 		aplications.DELETE("/:app_id", aplicationsController.DeleteApplication)
+		tenants.GET("/:tenant_id/services", aplicationsController.GetAplicationServicesList)
+		tenants.GET("/:tenant_id/:service_id", aplicationsController.GetAplicationService)
 	}
 
 	sevices := apiGroup.Group("/services")
