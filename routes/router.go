@@ -57,5 +57,16 @@ func InitRoutes() *gin.Engine {
 		aplications.PUT("/:user_id", aplicationsController.UpdateApplication)
 		aplications.DELETE("/:user_id", aplicationsController.DeleteApplication)
 	}
+	//TODO : change :user_id on app_id
+
+	sevices := apiGroup.Group("/services")
+	{
+		servicesController := new(controllers.ServicesController)
+		sevices.POST("", servicesController.CreateService)
+		sevices.GET("", servicesController.GetServicesBatch)
+		sevices.GET("/:service_id", servicesController.GetService)
+		sevices.PUT("/:service_id", servicesController.UpdateService)
+		sevices.DELETE("/:service_id", servicesController.DeleteService)
+	}
 	return router
 }

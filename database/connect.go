@@ -16,7 +16,7 @@ func InitDB() (*gorm.DB, error) {
 	}
 	db.DB().SetMaxIdleConns(100)
 	DB = db
-	db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.Password{}, &models.Application{})
+	db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.Password{}, &models.Application{}, &models.Service{})
 	initRoots()
 	return db, err
 }
