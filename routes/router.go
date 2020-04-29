@@ -53,11 +53,10 @@ func InitRoutes() *gin.Engine {
 		aplicationsController := new(controllers.ApplicationsController)
 		aplications.POST("", aplicationsController.CreateApplication)
 		aplications.GET("", aplicationsController.GetApplicationsBatch)
-		aplications.GET("/:user_id", aplicationsController.GetApplication)
-		aplications.PUT("/:user_id", aplicationsController.UpdateApplication)
-		aplications.DELETE("/:user_id", aplicationsController.DeleteApplication)
+		aplications.GET("/:app_id", aplicationsController.GetApplication)
+		aplications.PUT("/:app_id", aplicationsController.UpdateApplication)
+		aplications.DELETE("/:app_id", aplicationsController.DeleteApplication)
 	}
-	//TODO : change :user_id on app_id
 
 	sevices := apiGroup.Group("/services")
 	{
