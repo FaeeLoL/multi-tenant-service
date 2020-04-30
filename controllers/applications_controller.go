@@ -79,7 +79,7 @@ func (a ApplicationsController) GetApplication(c *gin.Context) {
 	}
 	appId, err := uuid.FromString(appIdS)
 	if err != nil {
-		a.JsonFail(c, http.StatusBadRequest, "invalid app_id format")
+		a.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("invalid app_id format %v", err))
 		return
 	}
 	var app models.Application
@@ -104,12 +104,12 @@ func (a ApplicationsController) UpdateApplication(c *gin.Context) {
 		a.JsonFail(c, http.StatusBadRequest, "invalid app_id format")
 		return
 	}
-
 	tx := database.DB.Begin()
 	var app models.Application
 	if err := tx.Where("ID = ?", appId).Find(&app).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			a.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The app with ID %s not found.", appIdS))
+			tx.Rollback()
 			return
 		}
 		tx.Rollback()
@@ -119,6 +119,7 @@ func (a ApplicationsController) UpdateApplication(c *gin.Context) {
 	var appInfo models.ApplicationPut
 	if err := c.Bind(&appInfo); err != nil {
 		a.JsonFail(c, http.StatusBadRequest, err.Error())
+		tx.Rollback()
 		return
 	}
 
@@ -129,9 +130,10 @@ func (a ApplicationsController) UpdateApplication(c *gin.Context) {
 	}
 
 	if appInfo.Name != nil {
-		if !isApplicationNameFree(app.Name) {
+		if !isApplicationNameFree(*appInfo.Name) {
 			a.JsonFail(c, http.StatusBadRequest,
 				fmt.Sprintf("application name %s is already taken ", *appInfo.Name))
+			tx.Rollback()
 			return
 		}
 		app.Name = *appInfo.Name
@@ -142,6 +144,7 @@ func (a ApplicationsController) UpdateApplication(c *gin.Context) {
 		panic(err)
 	}
 	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
 		panic(err)
 	}
 	a.JsonSuccess(c, http.StatusOK, app.ToBasicApplicationSchema())
@@ -158,14 +161,14 @@ func (a ApplicationsController) DeleteApplication(c *gin.Context) {
 		a.JsonFail(c, http.StatusBadRequest, "invalid tenant_id format")
 		return
 	}
-	versionS := c.Request.URL.Query().Get("version")
+	versionS := c.Request.URL.Query().Get("Version")
 	if versionS == "" {
-		a.JsonFail(c, http.StatusBadRequest, "specify `version` in query")
+		a.JsonFail(c, http.StatusBadRequest, "specify `Version` in query")
 		return
 	}
 	version, err := strconv.Atoi(versionS)
 	if err != nil {
-		a.JsonFail(c, http.StatusBadRequest, "invalid `version` parameter")
+		a.JsonFail(c, http.StatusBadRequest, "invalid `Version` parameter")
 		return
 	}
 	tx := database.DB.Begin()
@@ -215,7 +218,7 @@ func (a ApplicationsController) GetAplicationServicesList(c *gin.Context) {
 	}
 
 	var services []models.Service
-	if err := database.DB.Where("app_id = ?", applicationId).Find(&services).Error; err != nil {
+	if err := database.DB.Where("ApplicationId = ?", applicationId).Find(&services).Error; err != nil {
 		panic(err)
 	} // what about app itself?
 
@@ -250,7 +253,7 @@ func (a ApplicationsController) GetAplicationService(c *gin.Context) {
 	}
 	//add transaction?
 	var service models.Service
-	if err := database.DB.Where("id = ? AND app_id = ?", serviceId, appId).First(&service).Error; err != nil {
+	if err := database.DB.Where("id = ? AND ApplicationId = ?", serviceId, appId).First(&service).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			a.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The service with ID %s att application %s not found.", serviceIdS, appIdS))
 			return
