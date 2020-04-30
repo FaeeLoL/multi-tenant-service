@@ -218,7 +218,7 @@ func (a ApplicationsController) GetAplicationServicesList(c *gin.Context) {
 	}
 
 	var services []models.Service
-	if err := database.DB.Where("ApplicationId = ?", applicationId).Find(&services).Error; err != nil {
+	if err := database.DB.Where("application_id = ?", applicationId).Find(&services).Error; err != nil {
 		panic(err)
 	} // what about app itself?
 
