@@ -126,6 +126,7 @@ func (s ServicesController) UpdateService(c *gin.Context) {
 	if err := tx.Where("ID = ?", serviceId).Find(&service).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			s.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The service with ID %s not found.", serviceIdS))
+			tx.Rollback()
 			return
 		}
 		tx.Rollback()
@@ -135,6 +136,7 @@ func (s ServicesController) UpdateService(c *gin.Context) {
 	var serviceInfo models.ServicePut
 	if err := c.Bind(&serviceInfo); err != nil {
 		s.JsonFail(c, http.StatusBadRequest, err.Error())
+		tx.Rollback()
 		return
 	}
 
@@ -146,13 +148,15 @@ func (s ServicesController) UpdateService(c *gin.Context) {
 
 	applicationId, err := uuid.FromString(serviceInfo.ApplicationId)
 	if err != nil {
-		s.JsonFail(c, http.StatusBadRequest, "invalid app_id format")
+		s.JsonFail(c, http.StatusBadRequest, fmt.Sprintf("invalid app_id format %v %v", serviceInfo.ApplicationId, err))
+		tx.Rollback()
 		return
 	}
 	app := models.Application{}
 	if err := tx.Where("ID = ?", applicationId).Find(&app).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			s.JsonFail(c, http.StatusNotFound, fmt.Sprintf("The application with app_ID %s not found.", serviceInfo.ApplicationId))
+			tx.Rollback()
 			return
 		}
 		tx.Rollback()
@@ -161,9 +165,10 @@ func (s ServicesController) UpdateService(c *gin.Context) {
 	*service.ApplicationId = applicationId //a
 
 	if serviceInfo.Name != nil {
-		if !isServiceNameFree(service.Name, applicationId) {
+		if !isServiceNameFree(*serviceInfo.Name, applicationId) {
 			s.JsonFail(c, http.StatusBadRequest,
 				fmt.Sprintf("Service name %s is already taken ", *serviceInfo.Name))
+			tx.Rollback()
 			return
 		}
 		service.Name = *serviceInfo.Name
@@ -175,6 +180,7 @@ func (s ServicesController) UpdateService(c *gin.Context) {
 		panic(err)
 	}
 	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
 		panic(err)
 	}
 	s.JsonSuccess(c, http.StatusOK, service.ToBasicServiceSchema())
@@ -191,7 +197,7 @@ func (s ServicesController) DeleteService(c *gin.Context) {
 		s.JsonFail(c, http.StatusBadRequest, "invalid service_id format")
 		return
 	}
-	versionS := c.Request.URL.Query().Get("version")
+	versionS := c.Request.URL.Query().Get("Version")
 	if versionS == "" {
 		s.JsonFail(c, http.StatusBadRequest, "specify `version` in query")
 		return
@@ -229,7 +235,10 @@ func (s ServicesController) DeleteService(c *gin.Context) {
 }
 
 func isServiceNameFree(name string, appId uuid.UUID) bool {
-	var app models.Application
+	var service models.Service
 	return gorm.IsRecordNotFoundError(
-		database.DB.Where("name = ? AND app_id = ?", name, appId).First(&app).Error)
+		database.DB.Where("name = ? AND application_id = ?", name, appId).First(&service).Error)
 }
+
+/*		database.DB.Where("name = ? AND ApplicationId = ?", name, appId).First(&app).Error)
+ */
