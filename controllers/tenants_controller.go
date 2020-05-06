@@ -354,10 +354,6 @@ func (t TenantsController) GetTenantChildrenList(c *gin.Context) {
 
 func (t TenantsController) GetTenantUsersList(c *gin.Context) {
 	authUser := oauth2.GetAuthUserClaims(c)
-	if authUser.Role != models.TAdmin {
-		t.JsonFail(c, http.StatusForbidden, "Access is denied")
-		return
-	}
 	_, err := uuid.FromString(authUser.TenantId)
 	if err != nil {
 		t.JsonFail(c, http.StatusConflict, "invalid authorized tenant")
