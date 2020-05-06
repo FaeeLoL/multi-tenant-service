@@ -48,5 +48,26 @@ func InitRoutes() *gin.Engine {
 		apiGroup.GET("/self_info", usersController.GetSelfInfo)
 	}
 
+	aplications := apiGroup.Group("/aplications")
+	{
+		aplicationsController := new(controllers.ApplicationsController)
+		aplications.POST("", aplicationsController.CreateApplication)
+		aplications.GET("", aplicationsController.GetApplicationsBatch)
+		aplications.GET("/:app_id", aplicationsController.GetApplication)
+		aplications.PUT("/:app_id", aplicationsController.UpdateApplication)
+		aplications.DELETE("/:app_id", aplicationsController.DeleteApplication)
+		aplications.GET("/:app_id/services", aplicationsController.GetAplicationServicesList)
+		//tenants.GET("/:tenant_id/:service_id", aplicationsController.GetAplicationService)
+	}
+
+	sevices := apiGroup.Group("/services")
+	{
+		servicesController := new(controllers.ServicesController)
+		sevices.POST("", servicesController.CreateService)
+		sevices.GET("", servicesController.GetServicesBatch)
+		sevices.GET("/:service_id", servicesController.GetService)
+		sevices.PUT("/:service_id", servicesController.UpdateService)
+		sevices.DELETE("/:service_id", servicesController.DeleteService)
+	}
 	return router
 }
