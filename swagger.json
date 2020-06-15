@@ -450,11 +450,25 @@
           "200" : {
             "description" : "Success",
             "schema" : {
-              "$ref" : "#/definitions/uuidList"
+              "$ref" : "#/definitions/tenantBatch"
             },
             "examples" : {
               "application/json" : {
-                "items" : [ "aa4f8923-8950-4804-8827-c6d78388e5b6", "4eb7b320-48b4-4552-9bf8-f7482538da23" ]
+                "items" : [ {
+                  "id" : "f313ecf6-9256-4afd-9d47-72e032ee81d0",
+                  "name" : "The Qwerty Tenant",
+                  "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                  "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                  "version" : 3,
+                  "ancestral_access" : true
+                }, {
+                  "id" : "5d92a310-0ee7-11e7-95e6-5f64824358de",
+                  "name" : "The Another Tenant",
+                  "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                  "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                  "ancestral_access" : true,
+                  "version" : 2
+                } ]
               }
             },
             "headers" : { }
@@ -526,11 +540,23 @@
           "200" : {
             "description" : "Success",
             "schema" : {
-              "$ref" : "#/definitions/uuidList"
+              "$ref" : "#/definitions/userBatch"
             },
             "examples" : {
               "application/json" : {
-                "items" : [ "aa4f8923-8950-4804-8827-c6d78388e5b6", "4eb7b320-48b4-4552-9bf8-f7482538da23" ]
+                "items" : [ {
+                  "id" : "fae84e50-0eef-11e7-bc3f-d39de3f5fe32",
+                  "tenant_id" : "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
+                  "version" : 2,
+                  "login" : "some_login_1",
+                  "created_at" : "2016-06-22T18:25:16"
+                }, {
+                  "id" : "76137b0e-0ef0-11e7-b5c2-1f8159df2571",
+                  "tenant_id" : "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
+                  "version" : 2,
+                  "login" : "some_login_2",
+                  "created_at" : "2016-06-22T18:27:11"
+                } ]
               }
             },
             "headers" : { }
@@ -1239,6 +1265,10 @@
           "description" : "Role of new user",
           "type" : "string",
           "enum" : [ "tenant_admin", "tenant_user" ]
+        },
+        "password" : {
+          "description" : "User's password",
+          "type" : "string"
         }
       },
       "required" : [ "tenant_id" ]
