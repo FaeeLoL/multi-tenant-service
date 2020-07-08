@@ -1,1298 +1,1399 @@
 {
-  "swagger" : "2.0",
-  "info" : {
-    "version" : "1.0.0",
-    "title" : "multi-tenant-service",
-    "description" : "This is a multi-tenant-service API"
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "multi-tenant-service",
+    "description": "This is a multi-tenant-service API"
   },
-  "securityDefinitions" : {
-    "auth" : {
-      "type" : "oauth2",
-      "tokenUrl" : "http://example.com/api/2/idp/token",
-      "flow" : "password",
-      "scopes" : {
-        "tenant_admin" : "allows modifying tenant resourses",
-        "tenant_user" : "allows reading tenant resourses"
+  "securityDefinitions": {
+    "oauth": {
+      "type": "oauth2",
+      "flow": "password",
+      "scopes": {},
+      "tokenUrl": "134.209.226.111:10000/api/2/idp/token",
+      "description": ""
+    }
+  },
+  "paths": {
+    "/tenants": {
+      "get": {
+        "description": "Fetches details about multiple tenants specified by their UUIDs or about child tenants of a specific tenant specified by its UUID.\n",
+        "summary": "GetTenantsBatch",
+        "tags": [
+          "tenants"
+        ],
+        "operationId": "GetTenantsBatch",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "parent_id",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "The UUID of a tenant which child tenants' details will be fetched."
+          },
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "The UUIDs of tenants separated by comma which details will be fetched."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/tenantBatch"
+            },
+            "examples": {
+              "application/json": {
+                "items": [
+                  {
+                    "id": "f313ecf6-9256-4afd-9d47-72e032ee81d0",
+                    "name": "The Qwerty Tenant",
+                    "parent_id": "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                    "owner_id": "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                    "version": 3,
+                    "ancestral_access": true
+                  },
+                  {
+                    "id": "5d92a310-0ee7-11e7-95e6-5f64824358de",
+                    "name": "The Another Tenant",
+                    "parent_id": "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                    "owner_id": "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                    "ancestral_access": true,
+                    "version": 2
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "The request was denied due to an invalid or missing bearer access token.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request was denied due to the bearer access token having insufficient privileges.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "description": "Creates a new Tenant.\nmethod is used both in Cloud and Onprem version\n",
+        "summary": "CreateTenant",
+        "tags": [
+          "tenants"
+        ],
+        "operationId": "CreateTenant",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Informtaion about new tenant",
+            "schema": {
+              "$ref": "#/definitions/tenantPost"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Tenant successfully created",
+            "schema": {
+              "$ref": "#/definitions/Basictenantschema"
+            },
+            "examples": {
+              "application/json": {
+                "id": "f313ecf6-9256-4afd-9d47-72e032ee81d0",
+                "version": 1,
+                "name": "The Qwerty Tenant",
+                "parent_id": "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                "owner_id": "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                "ancestral_access": true
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Required type in 'Accept' request header is not supported.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Content must be JSON"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/tenants/{tenant_id}": {
+      "get": {
+        "description": "Fetches a Tenant by ID.",
+        "summary": "GetTenant",
+        "tags": [
+          "tenants"
+        ],
+        "operationId": "GetTenant",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "Tenant ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/Basictenantschema"
+            },
+            "examples": {
+              "application/json": {
+                "id": "f313ecf6-9256-4afd-9d47-72e032ee81d0",
+                "version": 2,
+                "name": "The Qwerty Tenant",
+                "parent_id": "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                "owner_id": "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                "has_children": true,
+                "ancestral_access": true
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Tenant was not found"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "description": "Updates a Tenant.",
+        "summary": "UpdateTenant",
+        "tags": [
+          "tenants"
+        ],
+        "operationId": "UpdateTenant",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "Tenant ID (UUID)"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "Tenant's infromation to update",
+            "schema": {
+              "$ref": "#/definitions/tenantPut"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant successfully updated",
+            "schema": {
+              "$ref": "#/definitions/Basictenantschema"
+            },
+            "examples": {
+              "application/json": {
+                "name": "The Qwerty Tenant",
+                "parent_id": "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                "owner_id": "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                "has_children": true,
+                "ancestral_access": true,
+                "version": 2
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Tenant was not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict in version",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "applicatin/json": {
+                "error": {
+                  "message": "Version mismatch"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "description": "Deletes a Tenant.",
+        "summary": "DeleteTenant",
+        "tags": [
+          "tenants"
+        ],
+        "operationId": "DeleteTenant",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "Tenant ID (UUID)"
+          },
+          {
+            "name": "versoin",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "description": "Growing number of object internal version"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Tenant successfully deleted",
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Tenant was not found"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/tenants/{tenant_id}/children": {
+      "get": {
+        "description": "Fetches Tenants at a specific level (children of the given Tenant).",
+        "summary": "GetTenantChildrenList",
+        "tags": [
+          "tenants"
+        ],
+        "operationId": "GetTenantChildrenList",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "Tenant ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/tenantBatch"
+            },
+            "examples": {
+              "application/json": {
+                "items": [
+                  {
+                    "id": "f313ecf6-9256-4afd-9d47-72e032ee81d0",
+                    "name": "The Qwerty Tenant",
+                    "parent_id": "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                    "owner_id": "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                    "version": 3,
+                    "ancestral_access": true
+                  },
+                  {
+                    "id": "5d92a310-0ee7-11e7-95e6-5f64824358de",
+                    "name": "The Another Tenant",
+                    "parent_id": "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
+                    "owner_id": "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
+                    "ancestral_access": true,
+                    "version": 2
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Tenant was not found"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/tenants/{tenant_id}/users": {
+      "get": {
+        "description": "Fetches Users UUIDs inside the Tenant.",
+        "summary": "GetTenantUsersList",
+        "tags": [
+          "tenants"
+        ],
+        "operationId": "GetTenantUsersList",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "Tenant ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/userBatch"
+            },
+            "examples": {
+              "application/json": {
+                "items": [
+                  {
+                    "id": "fae84e50-0eef-11e7-bc3f-d39de3f5fe32",
+                    "tenant_id": "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
+                    "version": 2,
+                    "login": "some_login_1",
+                    "created_at": "2016-06-22T18:25:16"
+                  },
+                  {
+                    "id": "76137b0e-0ef0-11e7-b5c2-1f8159df2571",
+                    "tenant_id": "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
+                    "version": 2,
+                    "login": "some_login_2",
+                    "created_at": "2016-06-22T18:27:11"
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Tenant was not found"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/users": {
+      "get": {
+        "description": "Fetches Users batch.",
+        "summary": "GetUsersBatch",
+        "tags": [
+          "users"
+        ],
+        "operationId": "GetUsersBatch",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "uuids",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "description": "Users UUIDs separated by comma"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/userBatch"
+            },
+            "examples": {
+              "application/json": {
+                "items": [
+                  {
+                    "id": "fae84e50-0eef-11e7-bc3f-d39de3f5fe32",
+                    "tenant_id": "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
+                    "version": 2,
+                    "login": "some_login_1",
+                    "created_at": "2016-06-22T18:25:16"
+                  },
+                  {
+                    "id": "76137b0e-0ef0-11e7-b5c2-1f8159df2571",
+                    "tenant_id": "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
+                    "version": 2,
+                    "login": "some_login_2",
+                    "created_at": "2016-06-22T18:27:11"
+                  }
+                ]
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "The request was denied due to an invalid or missing bearer access token.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request was denied due to the bearer  access token having insufficient privileges.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "post": {
+        "description": "Creates a new User.",
+        "summary": "CreateUser",
+        "tags": [
+          "users"
+        ],
+        "operationId": "CreateUser",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "New users information",
+            "schema": {
+              "$ref": "#/definitions/userPost"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User successfully created",
+            "schema": {
+              "$ref": "#/definitions/user"
+            },
+            "examples": {
+              "application/json": {
+                "id": "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
+                "tenant_id": "0ef03214-6e47-4e50-87f2-a5955ba6095c",
+                "login": "mylogin",
+                "version": 1,
+                "created_at": "2016-06-22T18:25:16"
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Required type in 'Accept' request header is not supported.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Content must be JSON"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/self_info": {
+      "get": {
+        "description": "Fetches information about current authorized user.",
+        "summary": "UserSelfInfo",
+        "tags": [
+          "users"
+        ],
+        "operationId": "UserSelfInfo",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/user"
+            },
+            "examples": {
+              "application/json": {
+                "id": "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
+                "tenant_id": "0ef03214-6e47-4e50-87f2-a5955ba6095c",
+                "version": 2,
+                "created_at": "2016-06-22T18:25:16"
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The request was denied due to the bearer access token having insufficient privileges.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/users/{user_id}": {
+      "get": {
+        "description": "Fetches user by ID.",
+        "summary": "GetUser",
+        "tags": [
+          "users"
+        ],
+        "operationId": "GetUser",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "User ID (UUID)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "schema": {
+              "$ref": "#/definitions/user"
+            },
+            "examples": {
+              "application/json": {
+                "id": "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
+                "tenant_id": "0ef03214-6e47-4e50-87f2-a5955ba6095c",
+                "version": 2,
+                "login": "mylogin",
+                "created_at": "2016-06-22T18:25:16"
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "User was not found"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "put": {
+        "description": "Updates a User.",
+        "summary": "UpdateUser",
+        "tags": [
+          "users"
+        ],
+        "operationId": "UpdateUser",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "User ID (UUID)"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "description": "User's information to update",
+            "schema": {
+              "$ref": "#/definitions/userPut"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User successfully updated",
+            "schema": {
+              "$ref": "#/definitions/user"
+            },
+            "examples": {
+              "application/json": {
+                "id": "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
+                "tenant_id": "0ef03214-6e47-4e50-87f2-a5955ba6095c",
+                "version": 3,
+                "login": "mylogin",
+                "created_at": "2016-06-22T18:25:16"
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Application was not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict in version",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "applicatin/json": {
+                "error": {
+                  "message": "Version mismatch"
+                }
+              }
+            }
+          },
+          "415": {
+            "description": "Required type in 'Accept' request header is not supported.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Content must be JSON"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "description": "Deletes a User by ID.",
+        "summary": "DeleteUser",
+        "tags": [
+          "users"
+        ],
+        "operationId": "DeleteUser",
+        "deprecated": false,
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
+            "description": "User ID (UUID)"
+          },
+          {
+            "name": "versoin",
+            "in": "query",
+            "required": true,
+            "type": "integer",
+            "description": "Growing number of users internal version"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "User successfully deleted",
+            "headers": {}
+          },
+          "401": {
+            "description": "Method required an authenticated user.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Authentication is required"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Current user has no permissions for this URL/method.",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "Access is denied"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "schema": {
+              "$ref": "#/definitions/errorScheme"
+            },
+            "examples": {
+              "application/json": {
+                "error": {
+                  "message": "User was not found"
+                }
+              }
+            }
+          }
+        },
+        "security": []
       }
     }
   },
-  "paths" : {
-    "/tenants" : {
-      "get" : {
-        "description" : "Fetches details about multiple tenants specified by their UUIDs or about child tenants of a specific tenant specified by its UUID.\n",
-        "summary" : "GetTenantsBatch",
-        "tags" : [ "tenants" ],
-        "operationId" : "GetTenantsBatch",
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "parent_id",
-          "in" : "query",
-          "required" : false,
-          "type" : "string",
-          "description" : "The UUID of a tenant which child tenants' details will be fetched."
-        }, {
-          "name" : "tenant_id",
-          "in" : "query",
-          "required" : false,
-          "type" : "string",
-          "description" : "The UUIDs of tenants separated by comma which details will be fetched."
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "schema" : {
-              "$ref" : "#/definitions/tenantBatch"
-            },
-            "examples" : {
-              "application/json" : {
-                "items" : [ {
-                  "id" : "f313ecf6-9256-4afd-9d47-72e032ee81d0",
-                  "name" : "The Qwerty Tenant",
-                  "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
-                  "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
-                  "version" : 3,
-                  "ancestral_access" : true
-                }, {
-                  "id" : "5d92a310-0ee7-11e7-95e6-5f64824358de",
-                  "name" : "The Another Tenant",
-                  "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
-                  "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
-                  "ancestral_access" : true,
-                  "version" : 2
-                } ]
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "The request was denied due to an invalid or missing bearer access token.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "The request was denied due to the bearer access token having insufficient privileges.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_user", "tenant_admin" ]
-        } ]
-      },
-      "post" : {
-        "description" : "Creates a new Tenant.\nmethod is used both in Cloud and Onprem version\n",
-        "summary" : "CreateTenant",
-        "tags" : [ "tenants" ],
-        "operationId" : "CreateTenant",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "body",
-          "in" : "body",
-          "required" : true,
-          "description" : "Informtaion about new tenant",
-          "schema" : {
-            "$ref" : "#/definitions/tenantPost"
-          }
-        } ],
-        "responses" : {
-          "201" : {
-            "description" : "Tenant successfully created",
-            "schema" : {
-              "$ref" : "#/definitions/Basictenantschema"
-            },
-            "examples" : {
-              "application/json" : {
-                "id" : "f313ecf6-9256-4afd-9d47-72e032ee81d0",
-                "version" : 1,
-                "name" : "The Qwerty Tenant",
-                "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
-                "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
-                "ancestral_access" : true
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "415" : {
-            "description" : "Required type in 'Accept' request header is not supported.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Content must be JSON"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin" ]
-        } ]
-      }
-    },
-    "/tenants/{tenant_id}" : {
-      "get" : {
-        "description" : "Fetches a Tenant by ID.",
-        "summary" : "GetTenant",
-        "tags" : [ "tenants" ],
-        "operationId" : "GetTenant",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "tenant_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "Tenant ID (UUID)"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "schema" : {
-              "$ref" : "#/definitions/Basictenantschema"
-            },
-            "examples" : {
-              "application/json" : {
-                "id" : "f313ecf6-9256-4afd-9d47-72e032ee81d0",
-                "version" : 2,
-                "name" : "The Qwerty Tenant",
-                "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
-                "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
-                "has_children" : true,
-                "ancestral_access" : true
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Tenant was not found"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin", "tenant_user" ]
-        } ]
-      },
-      "put" : {
-        "description" : "Updates a Tenant.",
-        "summary" : "UpdateTenant",
-        "tags" : [ "tenants" ],
-        "operationId" : "UpdateTenant",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "tenant_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "Tenant ID (UUID)"
-        }, {
-          "name" : "body",
-          "in" : "body",
-          "required" : true,
-          "description" : "Tenant's infromation to update",
-          "schema" : {
-            "$ref" : "#/definitions/tenantPut"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Tenant successfully updated",
-            "schema" : {
-              "$ref" : "#/definitions/Basictenantschema"
-            },
-            "examples" : {
-              "application/json" : {
-                "name" : "The Qwerty Tenant",
-                "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
-                "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
-                "has_children" : true,
-                "ancestral_access" : true,
-                "version" : 2
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict in version",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "applicatin/json" : {
-                "error" : {
-                  "message" : "Version mismatch"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Tenant was not found"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin" ]
-        } ]
-      },
-      "delete" : {
-        "description" : "Deletes a Tenant.",
-        "summary" : "DeleteTenant",
-        "tags" : [ "tenants" ],
-        "operationId" : "DeleteTenant",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "tenant_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "Tenant ID (UUID)"
-        }, {
-          "name" : "versoin",
-          "in" : "query",
-          "required" : true,
-          "type" : "integer",
-          "description" : "Growing number of object internal version"
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Tenant successfully deleted",
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Tenant was not found"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin" ]
-        } ]
-      }
-    },
-    "/tenants/{tenant_id}/children" : {
-      "get" : {
-        "description" : "Fetches Tenants at a specific level (children of the given Tenant).",
-        "summary" : "GetTenantChildrenList",
-        "tags" : [ "tenants" ],
-        "operationId" : "GetTenantChildrenList",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "tenant_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "Tenant ID (UUID)"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "schema" : {
-              "$ref" : "#/definitions/tenantBatch"
-            },
-            "examples" : {
-              "application/json" : {
-                "items" : [ {
-                  "id" : "f313ecf6-9256-4afd-9d47-72e032ee81d0",
-                  "name" : "The Qwerty Tenant",
-                  "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
-                  "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
-                  "version" : 3,
-                  "ancestral_access" : true
-                }, {
-                  "id" : "5d92a310-0ee7-11e7-95e6-5f64824358de",
-                  "name" : "The Another Tenant",
-                  "parent_id" : "fa6859a9-f5e1-4faf-a56c-5a0ae866dc4f",
-                  "owner_id" : "03fa8bf4-28f2-11e7-ba28-cbe99c3c450a",
-                  "ancestral_access" : true,
-                  "version" : 2
-                } ]
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Tenant was not found"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_user", "tenant_admin" ]
-        } ]
-      }
-    },
-    "/tenants/{tenant_id}/users" : {
-      "get" : {
-        "description" : "Fetches Users UUIDs inside the Tenant.",
-        "summary" : "GetTenantUsersList",
-        "tags" : [ "tenants" ],
-        "operationId" : "GetTenantUsersList",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "tenant_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "Tenant ID (UUID)"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "schema" : {
-              "$ref" : "#/definitions/userBatch"
-            },
-            "examples" : {
-              "application/json" : {
-                "items" : [ {
-                  "id" : "fae84e50-0eef-11e7-bc3f-d39de3f5fe32",
-                  "tenant_id" : "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
-                  "version" : 2,
-                  "login" : "some_login_1",
-                  "created_at" : "2016-06-22T18:25:16"
-                }, {
-                  "id" : "76137b0e-0ef0-11e7-b5c2-1f8159df2571",
-                  "tenant_id" : "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
-                  "version" : 2,
-                  "login" : "some_login_2",
-                  "created_at" : "2016-06-22T18:27:11"
-                } ]
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Tenant was not found"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin", "tenant_user" ]
-        } ]
-      }
-    },
-    "/users" : {
-      "get" : {
-        "description" : "Fetches Users batch.",
-        "summary" : "GetUsersBatch",
-        "tags" : [ "users" ],
-        "operationId" : "GetUsersBatch",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "uuids",
-          "in" : "query",
-          "required" : false,
-          "type" : "string",
-          "description" : "Users UUIDs separated by comma"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "schema" : {
-              "$ref" : "#/definitions/userBatch"
-            },
-            "examples" : {
-              "application/json" : {
-                "items" : [ {
-                  "id" : "fae84e50-0eef-11e7-bc3f-d39de3f5fe32",
-                  "tenant_id" : "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
-                  "version" : 2,
-                  "login" : "some_login_1",
-                  "created_at" : "2016-06-22T18:25:16"
-                }, {
-                  "id" : "76137b0e-0ef0-11e7-b5c2-1f8159df2571",
-                  "tenant_id" : "7ea1cf00-0ef0-11e7-8741-bb83f58f591f",
-                  "version" : 2,
-                  "login" : "some_login_2",
-                  "created_at" : "2016-06-22T18:27:11"
-                } ]
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "The request was denied due to an invalid or missing bearer access token.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "The request was denied due to the bearer  access token having insufficient privileges.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_user", "tenant_admin" ]
-        } ]
-      },
-      "post" : {
-        "description" : "Creates a new User.",
-        "summary" : "CreateUser",
-        "tags" : [ "users" ],
-        "operationId" : "CreateUser",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "body",
-          "in" : "body",
-          "required" : true,
-          "description" : "New users information",
-          "schema" : {
-            "$ref" : "#/definitions/userPost"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "User successfully created",
-            "schema" : {
-              "$ref" : "#/definitions/user"
-            },
-            "examples" : {
-              "application/json" : {
-                "id" : "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
-                "tenant_id" : "0ef03214-6e47-4e50-87f2-a5955ba6095c",
-                "login" : "mylogin",
-                "version" : 1,
-                "created_at" : "2016-06-22T18:25:16"
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "415" : {
-            "description" : "Required type in 'Accept' request header is not supported.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Content must be JSON"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin" ]
-        } ]
-      }
-    },
-    "/self_info" : {
-      "get" : {
-        "description" : "Fetches information about current authorized user.",
-        "summary" : "UserSelfInfo",
-        "tags" : [ "users" ],
-        "operationId" : "UserSelfInfo",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "schema" : {
-              "$ref" : "#/definitions/user"
-            },
-            "examples" : {
-              "application/json" : {
-                "id" : "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
-                "tenant_id" : "0ef03214-6e47-4e50-87f2-a5955ba6095c",
-                "version" : 2,
-                "created_at" : "2016-06-22T18:25:16"
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "The request was denied due to the bearer access token having insufficient privileges.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_user", "tenant_admin" ]
-        } ]
-      }
-    },
-    "/users/{user_id}" : {
-      "get" : {
-        "description" : "Fetches user by ID.",
-        "summary" : "GetUser",
-        "tags" : [ "users" ],
-        "operationId" : "GetUser",
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "user_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "User ID (UUID)"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Success",
-            "schema" : {
-              "$ref" : "#/definitions/user"
-            },
-            "examples" : {
-              "application/json" : {
-                "id" : "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
-                "tenant_id" : "0ef03214-6e47-4e50-87f2-a5955ba6095c",
-                "version" : 2,
-                "login" : "mylogin",
-                "created_at" : "2016-06-22T18:25:16"
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "User was not found"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin", "tenant_user" ]
-        } ]
-      },
-      "put" : {
-        "description" : "Updates a User.",
-        "summary" : "UpdateUser",
-        "tags" : [ "users" ],
-        "operationId" : "UpdateUser",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "user_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "User ID (UUID)"
-        }, {
-          "name" : "body",
-          "in" : "body",
-          "required" : true,
-          "description" : "User's information to update",
-          "schema" : {
-            "$ref" : "#/definitions/userPut"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "User successfully updated",
-            "schema" : {
-              "$ref" : "#/definitions/user"
-            },
-            "examples" : {
-              "application/json" : {
-                "id" : "948efcf2-b740-4c40-bb2d-4e4a46adfd87",
-                "tenant_id" : "0ef03214-6e47-4e50-87f2-a5955ba6095c",
-                "version" : 3,
-                "login" : "mylogin",
-                "created_at" : "2016-06-22T18:25:16"
-              }
-            },
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Application was not found"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict in version",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "applicatin/json" : {
-                "error" : {
-                  "message" : "Version mismatch"
-                }
-              }
-            }
-          },
-          "415" : {
-            "description" : "Required type in 'Accept' request header is not supported.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Content must be JSON"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin" ]
-        } ]
-      },
-      "delete" : {
-        "description" : "Deletes a User by ID.",
-        "summary" : "DeleteUser",
-        "tags" : [ "users" ],
-        "operationId" : "DeleteUser",
-        "deprecated" : false,
-        "produces" : [ "application/json" ],
-        "parameters" : [ {
-          "name" : "user_id",
-          "in" : "path",
-          "required" : true,
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}",
-          "description" : "User ID (UUID)"
-        }, {
-          "name" : "versoin",
-          "in" : "query",
-          "required" : true,
-          "type" : "integer",
-          "description" : "Growing number of users internal version"
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "User successfully deleted",
-            "headers" : { }
-          },
-          "401" : {
-            "description" : "Method required an authenticated user.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Authentication is required"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Current user has no permissions for this URL/method.",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "Access is denied"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Not Found",
-            "schema" : {
-              "$ref" : "#/definitions/errorScheme"
-            },
-            "examples" : {
-              "application/json" : {
-                "error" : {
-                  "message" : "User was not found"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "auth" : [ "tenant_admin" ]
-        } ]
-      }
-    }
-  },
-  "definitions" : {
-    "errorScheme" : {
-      "title" : "errorScheme",
-      "type" : "object",
-      "properties" : {
-        "error" : {
-          "$ref" : "#/definitions/Error"
+  "definitions": {
+    "errorScheme": {
+      "title": "errorScheme",
+      "type": "object",
+      "properties": {
+        "error": {
+          "$ref": "#/definitions/Error"
         }
       },
-      "required" : [ "error" ]
+      "required": [
+        "error"
+      ]
     },
-    "Error" : {
-      "title" : "Error",
-      "type" : "object",
-      "properties" : {
-        "message" : {
-          "type" : "string"
+    "Error": {
+      "title": "Error",
+      "type": "object",
+      "properties": {
+        "message": {
+          "type": "string"
         }
       },
-      "required" : [ "message" ]
+      "required": [
+        "message"
+      ]
     },
-    "tenantPost" : {
-      "title" : "tenantPost",
-      "type" : "object",
-      "properties" : {
-        "name" : {
-          "description" : "Human-readable name that will be displayed to the users",
-          "type" : "string"
+    "tenantPost": {
+      "title": "tenantPost",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Human-readable name that will be displayed to the users",
+          "type": "string"
         },
-        "parent_id" : {
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
+        "parent_id": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
         }
       },
-      "required" : [ "name", "parent_id" ]
+      "required": [
+        "name",
+        "parent_id"
+      ]
     },
-    "tenantPut" : {
-      "title" : "tenantPut",
-      "type" : "object",
-      "properties" : {
-        "name" : {
-          "description" : "Human-readable name that will be displayed to the users",
-          "type" : "string"
+    "tenantPut": {
+      "title": "tenantPut",
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Human-readable name that will be displayed to the users",
+          "type": "string"
         },
-        "parent_id" : {
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
+        "parent_id": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
         },
-        "ancestral_access" : {
-          "description" : "Indicates whether tenant's indirect ancestors have access to it",
-          "type" : "boolean"
+        "ancestral_access": {
+          "description": "Indicates whether tenant's indirect ancestors have access to it",
+          "type": "boolean"
         },
-        "version" : {
-          "description" : "Auto-increment tenant version",
-          "type" : "integer"
+        "version": {
+          "description": "Auto-increment tenant version",
+          "type": "integer"
         }
       }
     },
-    "Basictenantschema" : {
-      "title" : "Basictenantschema",
-      "type" : "object",
-      "properties" : {
-        "id" : {
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
+    "Basictenantschema": {
+      "title": "Basictenantschema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
         },
-        "name" : {
-          "description" : "Human-readable name that will be displayed to the users",
-          "type" : "string"
+        "name": {
+          "description": "Human-readable name that will be displayed to the users",
+          "type": "string"
         },
-        "parent_id" : {
-          "description" : "ID of parent tenant",
-          "type" : "string"
+        "parent_id": {
+          "description": "ID of parent tenant",
+          "type": "string"
         },
-        "owner_id" : {
-          "description" : "Identifier of personal tenant owner user. This field can have a null value.",
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
+        "owner_id": {
+          "description": "Identifier of personal tenant owner user. This field can have a null value.",
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
         },
-        "ancestral_access" : {
-          "description" : "Indicates whether tenant's indirect ancestors have access to it",
-          "type" : "boolean"
+        "ancestral_access": {
+          "description": "Indicates whether tenant's indirect ancestors have access to it",
+          "type": "boolean"
         },
-        "version" : {
-          "description" : "Auto-increment tenant version",
-          "type" : "integer"
+        "version": {
+          "description": "Auto-increment tenant version",
+          "type": "integer"
         }
       },
-      "required" : [ "id", "name", "parent_id", "has_children", "update_lock", "ancestral_access" ]
+      "required": [
+        "id",
+        "name",
+        "parent_id",
+        "has_children",
+        "update_lock",
+        "ancestral_access"
+      ]
     },
-    "tenantBatch" : {
-      "title" : "tenantBatch",
-      "type" : "object",
-      "properties" : {
-        "items" : {
-          "type" : "array",
-          "items" : {
-            "$ref" : "#/definitions/Basictenantschema"
+    "tenantBatch": {
+      "title": "tenantBatch",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Basictenantschema"
           }
         }
       }
     },
-    "uuidList" : {
-      "title" : "uuidList",
-      "type" : "object",
-      "properties" : {
-        "items" : {
-          "type" : "array",
-          "items" : {
-            "type" : "string",
-            "minLength" : 36,
-            "maxLength" : 36,
-            "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
+    "uuidList": {
+      "title": "uuidList",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
           }
         }
       },
-      "required" : [ "items" ]
+      "required": [
+        "items"
+      ]
     },
-    "user" : {
-      "title" : "user",
-      "type" : "object",
-      "properties" : {
-        "id" : {
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
+    "user": {
+      "title": "user",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
         },
-        "tenant_id" : {
-          "type" : "string",
-          "minLength" : 36,
-          "maxLength" : 36,
-          "pattern" : "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
+        "tenant_id": {
+          "type": "string",
+          "minLength": 36,
+          "maxLength": 36,
+          "pattern": "[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}"
         },
-        "login" : {
-          "description" : "User's login",
-          "type" : "string"
+        "login": {
+          "description": "User's login",
+          "type": "string"
         },
-        "version" : {
-          "description" : "Auto-increment object of user's data version",
-          "type" : "integer"
+        "version": {
+          "description": "Auto-increment object of user's data version",
+          "type": "integer"
         },
-        "created_at" : {
-          "description" : "RFC3339 Formatted date",
-          "type" : "string",
-          "minLength" : 19,
-          "maxLength" : 32,
-          "pattern" : "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([\\+\\-]\\d{2}\\:\\d{2})?"
+        "created_at": {
+          "description": "RFC3339 Formatted date",
+          "type": "string",
+          "minLength": 19,
+          "maxLength": 32,
+          "pattern": "\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([\\+\\-]\\d{2}\\:\\d{2})?"
         }
       },
-      "required" : [ "id", "tenant_id", "login", "created_at" ]
+      "required": [
+        "id",
+        "tenant_id",
+        "login",
+        "created_at"
+      ]
     },
-    "userBatch" : {
-      "title" : "userBatch",
-      "type" : "object",
-      "properties" : {
-        "items" : {
-          "type" : "array",
-          "items" : {
-            "$ref" : "#/definitions/user"
+    "userBatch": {
+      "title": "userBatch",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/user"
           }
         }
       },
-      "required" : [ "items" ]
+      "required": [
+        "items"
+      ]
     },
-    "userPost" : {
-      "title" : "userPost",
-      "type" : "object",
-      "properties" : {
-        "tenant_id" : {
-          "description" : "ID of tenant this user belongs to",
-          "type" : "string"
+    "userPost": {
+      "title": "userPost",
+      "type": "object",
+      "properties": {
+        "tenant_id": {
+          "description": "ID of tenant this user belongs to",
+          "type": "string"
         },
-        "login" : {
-          "description" : "User's login",
-          "type" : "string"
+        "login": {
+          "description": "User's login",
+          "type": "string"
         },
-        "role" : {
-          "description" : "Role of new user",
-          "type" : "string",
-          "enum" : [ "tenant_admin", "tenant_user" ]
+        "role": {
+          "description": "Role of new user",
+          "type": "string",
+          "enum": [
+            "tenant_admin",
+            "tenant_user"
+          ]
         },
-        "password" : {
-          "description" : "User's password",
-          "type" : "string"
+        "password": {
+          "description": "User's password",
+          "type": "string"
         }
       },
-      "required" : [ "tenant_id" ]
+      "required": [
+        "tenant_id"
+      ]
     },
-    "userPut" : {
-      "title" : "userPut",
-      "type" : "object",
-      "properties" : {
-        "login" : {
-          "description" : "User's login",
-          "type" : "string"
+    "userPut": {
+      "title": "userPut",
+      "type": "object",
+      "properties": {
+        "login": {
+          "description": "User's login",
+          "type": "string"
         },
-        "role" : {
-          "description" : "Role of user",
-          "type" : "string"
+        "role": {
+          "description": "Role of user",
+          "type": "string"
         },
-        "version" : {
-          "description" : "Auto-increment value of user's data version",
-          "type" : "integer"
+        "version": {
+          "description": "Auto-increment value of user's data version",
+          "type": "integer"
         }
       }
     }
   },
-  "schemes" : [ "http" ],
-  "host" : "localhost:8080",
-  "basePath" : "/api/v1"
+  "schemes": [
+    "http"
+  ],
+  "host": "134.209.226.111:10000",
+  "basePath": "/api/v1",
+  "produces": [
+    "application/json"
+  ],
+  "consumes": [
+    "application/json"
+  ]
 }
